@@ -61,11 +61,11 @@ def _validateConf():
     _validateConfItem('exclude_checks', [])
 
 
-def fontBakeryConfigFile():
+def fontBakeryConfigFile() -> str:
     return _plugin_dir + '/' + FONTBAKERY_CONFIGFILE
 
 
-def fontSpectorConfigFile():
+def fontSpectorConfigFile() -> str:
     return _plugin_dir + '/' + FONTSPECTOR_CONFIGFILE
 
 
