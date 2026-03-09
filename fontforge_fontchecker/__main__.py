@@ -1,9 +1,5 @@
 import fontforge
-from . import config
-
-
-def dummyFunc(u, glyph):
-    fontforge.postNotice("FontForge Plugin Template", "Hello, world!")
+from . import config, run_check
 
 
 def fontforge_plugin_config(**_):
@@ -15,8 +11,8 @@ def fontforge_plugin_init(preferences_path=None, **_):
     config.loadConf(preferences_path)
 
     fontforge.registerMenuItem(
-        callback=dummyFunc,
-        enable=lambda *_: False,
+        callback=run_check.run_check,
+        enable=run_check.enabled,
         context="Font",
         name="Check font"
     )

@@ -61,6 +61,14 @@ def _validateConf():
     _validateConfItem('exclude_checks', [])
 
 
+def fontBakeryConfigFile():
+    return _plugin_dir + '/' + FONTBAKERY_CONFIGFILE
+
+
+def fontSpectorConfigFile():
+    return _plugin_dir + '/' + FONTSPECTOR_CONFIGFILE
+
+
 def loadConf(confdir: str):
     global _plugin_dir, plugin_config, fontbakery_config, fontspector_config
     _plugin_dir = confdir
@@ -72,11 +80,11 @@ def loadConf(confdir: str):
     _validateConf()
 
     try:
-        fontbakery_config = TOMLFile(_plugin_dir + '/' + FONTBAKERY_CONFIGFILE).read()
+        fontbakery_config = TOMLFile(fontBakeryConfigFile()).read()
     except FileNotFoundError:
         pass
     try:
-        fontspector_config = TOMLFile(_plugin_dir + '/' + FONTSPECTOR_CONFIGFILE).read()
+        fontspector_config = TOMLFile(fontSpectorConfigFile()).read()
     except FileNotFoundError:
         pass
 
