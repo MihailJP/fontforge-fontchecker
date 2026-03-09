@@ -5,6 +5,7 @@ from typing import Optional
 from subprocess import run
 import json
 import webbrowser
+from pathlib import Path
 
 RESULT_JSON = 'lastresult.json'
 RESULT_HTML = 'lastresult.html'
@@ -117,9 +118,13 @@ def _outro(filename: str):
             webbrowser.open('file://' + _htmlFile(), 1)
 
 
-def run_check(u, font: fontforge.font):
+def _run_check_direct(font: fontforge.font):
+    run(_cmdline(font.path))
+    _outro(Path(font.path).name)
+
+
+def _run_check_tmpfile(font: fontforge.font):
     with tempfile.TemporaryDirectory() as tmpdir:
-        config.saveConf()
         changed = font.changed
         basename = (
             (font.default_base_filename or font.cidfontname or font.fontname) +
@@ -130,3 +135,24 @@ def run_check(u, font: fontforge.font):
         font.changed = changed
         run(_cmdline(testfile))
         _outro(basename)
+
+
+def run_check(u, font: fontforge.font):
+    config.saveConf()
+    if any(font.path.endswith(x) for x in ['.ttf', '.otf', '.ufo', '.ufo2', '.ufo3']):
+        if font.changed:
+            ans = fontforge.ask(
+                'Font has been changed',
+                'The font\n' + font.path + '\n'
+                'has unsaved changes.\n'
+                'How would you like to check?',
+                ['Expor_t a temporary file', 'Check _existing font'],
+            )
+            if ans == 0:
+                _run_check_tmpfile(font)
+            else:
+                _run_check_direct(font)
+        else:
+            _run_check_direct(font)
+    else:
+        _run_check_tmpfile(font)
