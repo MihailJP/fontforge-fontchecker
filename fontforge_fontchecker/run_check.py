@@ -6,7 +6,6 @@ from subprocess import run
 import json
 import webbrowser
 from pathlib import Path
-from os.path import exists
 
 RESULT_JSON = 'lastresult.json'
 RESULT_HTML = 'lastresult.html'
@@ -35,7 +34,7 @@ def enabled(u, font) -> bool:
     return bool(_executable())
 
 
-def _cmdline(filename: str) -> list[str]:
+def _cmdline(filename: str, confPath: Optional[str] = None) -> list[str]:
     if _executable():
         isFontSpector = (_executable() == config.fontspector_path)
         cmdline = [_executable()]
@@ -49,7 +48,10 @@ def _cmdline(filename: str) -> list[str]:
         cmdline.append('-l')
         cmdline.append('info' if isFontSpector else 'INFO')
         cmdline.append('--configuration')
-        cmdline.append(config.fontSpectorConfigFile() if isFontSpector else config.fontBakeryConfigFile())
+        cmdline.append(
+            confPath if confPath else
+            config.fontSpectorConfigFile() if isFontSpector else config.fontBakeryConfigFile()
+        )
         cmdline.append('--json')
         cmdline.append(_jsonFile())
         cmdline.append('--html')
@@ -119,8 +121,49 @@ def _outro(filename: str):
             webbrowser.open('file://' + _htmlFile(), 1)
 
 
+def _check_git_repo(path: Path) -> Optional[Path]:
+    chkPath = path.parent.absolute()
+    for _ in range(len(chkPath.parts)):
+        if (gitPath := chkPath.joinpath('.git')).exists():
+            return gitPath
+        chkPath = chkPath.parent
+    return None
+
+
+def _check_project_config(font: fontforge.font) -> Optional[str]:
+    """Check for project-specific configuration file"""
+
+    if _executable():
+        isFontSpector = (_executable() == config.fontspector_path)
+        filename = 'fontspector.toml' if isFontSpector else 'fontbakery.toml'
+        p = Path(font.path)
+
+        if gitdir := _check_git_repo(p):
+            if (conffile := gitdir.parent.joinpath(filename)).exists():
+                return str(conffile)
+
+        if (conffile := p.parent.joinpath(filename)).exists():
+            return str(conffile)
+
+    return None
+
+
+def _ask_project_config(font: fontforge.font) -> Optional[str]:
+    projectConf = _check_project_config(font)
+    if projectConf:
+        ans = fontforge.ask(
+            'Project-specific configuration file',
+            'Project-specific configuration file\n' +
+            projectConf + '\n'
+            'was found. Use it?',
+            ['_Yes', '_No'])
+        if ans == 1:
+            projectConf = None
+    return projectConf
+
+
 def _run_check_direct(font: fontforge.font):
-    run(_cmdline(font.path))
+    run(_cmdline(font.path, _ask_project_config(font)))
     _outro(Path(font.path).name)
 
 
@@ -134,13 +177,13 @@ def _run_check_tmpfile(font: fontforge.font):
         testfile = tmpdir + '/' + basename
         font.generate(testfile)
         font.changed = changed
-        run(_cmdline(testfile))
+        run(_cmdline(testfile, _ask_project_config(font)))
         _outro(basename)
 
 
 def run_check(u, font: fontforge.font):
     config.saveConf()
-    if not exists(font.path):
+    if not Path(font.path).exists():
         _run_check_tmpfile(font)
     elif any(font.path.endswith(x) for x in ['.ttf', '.otf', '.ufo', '.ufo2', '.ufo3']):
         if font.changed:
