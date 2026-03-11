@@ -3,6 +3,12 @@ Fontforge font checker plugin
 
 Font checker wrapper for Fontforge
 
+This plugin adds frontend of Fontbakery or Fontspector to Fontforge.
+Although Fontforge itself has built-in validation feature, these external
+tools provides more useful checks.
+
+Python 3.9 or later required.
+
 Install
 -------
 
@@ -27,7 +33,94 @@ path where the required module.
 export PYTHONPATH=/path/to/fontforge/python/module:$PYTHONPATH
 ```
 
+Configuration
+-------------
+
+This plugin has configuration menu. Select File > Configure Plugins... > Font
+checker and click Configure to open.
+
+Configuration will be stored in
+`~/.config/fontforge/plugin/Font checker/config.toml` (for Linux.)
+
+### Backend
+
+Choose from auto (default), Fontbakery, or Fontspector. If auto,
+Fontspector will be preferred.
+
+Either or both must be installed to your system; make sure you add the
+backend executables to `PATH`. It is not this plugin itself which
+checks fonts.
+
+### Check as
+
+Unfortunately the external check tools cannot check SFDs (Fontforge's native
+file type) directly. Fonts must be exported so that the tools can check.
+
+Choose from TTF (default) or UFO. Between these two, usually TTF
+is encouraged. Fontbakery's check against UFOs is quite incomplete.
+
+### Profile
+
+Profiles are what specifies which set of checks will be executed. Choose from
+the list. If you want to use custom profile, edit the configuration file.
+
+Default profile is 'Universal' which checks what considered as community
+best practice.
+
+These 5 profiles are available for both Fontbakery and Fontspector
+(for the latter as built-in profiles):
+
+- OpenType (standards compliance only)
+- Univarsal
+- Google Fonts
+- ISO 15008 (in-car accessibility)
+- Fontwerk
+
+### Explicit checks
+
+Comma-separated list of check IDs (or part of them) which are to be
+explicitly executed. If specified, only those checks are executed.
+
+### Excluded checks
+
+Comma-separated list of check IDs (or part of them) which are
+not to be executed. If specified, those checks are skipped.
+
 Usage
 -----
 
-Explanation here
+This plugin adds following items into "Tools" menu:
+
+- Check font
+
+### Check font
+
+For TTF or UFO, check will be done against the file existing on disk.
+If such file has unsaved changes, asks which you intend: checking the files
+on disk or checking exported font including changes.
+For other files, the font will be exported into a temporary directory to check.
+
+#### Project-specific configuration file
+
+If there is 'fontbakery.toml' or 'fontspector.toml' (for respective font check
+tools) in the same directory as the font file or the Git repository root
+directory in which the font, you will be asked if you intend to use that
+configuration file.
+
+#### View report
+
+Once the check is finished, result summary is reported in warning log window,
+and you are asked if you would like to view details. It will open the browser
+to show the detail report.
+
+| Symbol | Level | Explanation (from Fontbakery help text)                       |
+|--------|-------|---------------------------------------------------------------|
+| 💥     | ERROR | Something wrong with the font checker itself, possibly a bug. |
+| ☠      | FATAL | An extremely severe issue that must be addressed immediately. |
+| 🔥     | FAIL  | A problem with the font that must be fixed.                   |
+| ⚠️     | WARN  | Something that you should consider addressing.                |
+| ℹ️     | INFO  | Something useful, typically stats.                            |
+| ⏩     | SKIP  | The check does not apply to the given font.                   |
+| ✅     | PASS  | The font looks good for the given checking routine.           |
+
+Certain environments show the symbols as emojis.
