@@ -159,7 +159,7 @@ def configInterface():
         plugin_config['backend'] = ans['backend']
         plugin_config['check_as'] = ans['check_as']
         plugin_config['profile'] = ans['profile']
-        plugin_config['explicit_checks'] = [a for a in (ans['explicit_checks'] or '').split(',') if a]
-        plugin_config['exclude_checks'] = [a for a in (ans['exclude_checks'] or '').split(',') if a]
+        plugin_config['explicit_checks'] = [a.strip() for a in (ans['explicit_checks'] or '').split(',') if a]
+        plugin_config['exclude_checks'] = [a.strip() for a in (ans['exclude_checks'] or '').split(',') if a]
         _writeBackendConf()
         saveConf()
