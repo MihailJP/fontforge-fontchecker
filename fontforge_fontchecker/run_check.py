@@ -6,6 +6,7 @@ from subprocess import run
 import json
 import webbrowser
 from pathlib import Path
+from os.path import exists
 
 RESULT_JSON = 'lastresult.json'
 RESULT_HTML = 'lastresult.html'
@@ -139,7 +140,9 @@ def _run_check_tmpfile(font: fontforge.font):
 
 def run_check(u, font: fontforge.font):
     config.saveConf()
-    if any(font.path.endswith(x) for x in ['.ttf', '.otf', '.ufo', '.ufo2', '.ufo3']):
+    if not exists(font.path):
+        _run_check_tmpfile(font)
+    elif any(font.path.endswith(x) for x in ['.ttf', '.otf', '.ufo', '.ufo2', '.ufo3']):
         if font.changed:
             ans = fontforge.ask(
                 'Font has been changed',
