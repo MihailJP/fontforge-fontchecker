@@ -52,6 +52,7 @@ def _validateConf():
     global profiles
     _validateConfItem('backend', 'auto', choice=['auto', 'fontbakery', 'fontspector'])
     _validateConfItem('check_as', 'ttf', choice=['ttf', 'ufo'])
+    _validateConfItem('glyph_result', {'color': False, 'comment': False})
     if _validateConfItem('profiles', profiles):
         profiles |= plugin_config['profiles']
     if _validateConfItem('profile', 'universal'):
@@ -134,6 +135,17 @@ def configInterface():
             },
             {
                 'type': 'choice',
+                'question': 'Result for glyphs',
+                'tag': 'glyph_result',
+                'checks': True,
+                'multiple': True,
+                'answers': [
+                    {'name': p, 'tag': p.lower(), 'default': plugin_config['glyph_result'][p.lower()]}
+                    for p in ['Color', 'Comment']
+                ],
+            },
+            {
+                'type': 'choice',
                 'question': 'Profile',
                 'tag': 'profile',
                 'answers': [
@@ -159,6 +171,8 @@ def configInterface():
         plugin_config['backend'] = ans['backend']
         plugin_config['check_as'] = ans['check_as']
         plugin_config['profile'] = ans['profile']
+        plugin_config['glyph_result']['color'] = (ans['glyph_result'] and ('color' in ans['glyph_result']))
+        plugin_config['glyph_result']['comment'] = (ans['glyph_result'] and ('comment' in ans['glyph_result']))
         plugin_config['explicit_checks'] = [a.strip() for a in (ans['explicit_checks'] or '').split(',') if a]
         plugin_config['exclude_checks'] = [a.strip() for a in (ans['exclude_checks'] or '').split(',') if a]
         _writeBackendConf()

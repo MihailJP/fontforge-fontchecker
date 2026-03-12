@@ -59,6 +59,12 @@ file type) directly. Fonts must be exported so that the tools can check.
 Choose from TTF (default) or UFO. Between these two, usually TTF
 is encouraged. Fontbakery's check against UFOs is quite incomplete.
 
+### Result for glyphs
+
+This plugin can highlight glyphs with issues in the font view.
+
+Enable or disable for 'color' or 'comment.'
+
 ### Profile
 
 Profiles are what specifies which set of checks will be executed. Choose from
@@ -107,6 +113,16 @@ tools) in the same directory as the font file or the Git repository root
 directory in which the font, you will be asked if you intend to use that
 configuration file.
 
+#### Highlight and add comment to glyphs with problems
+
+When enabled by the configuration, glyphs with problems are highlighted with
+red or yellow, and the result on those glyphs are added as comment.
+Regardless of config, problematic glyphs will be selected.
+
+Not all checks are supported.
+
+This feature is not yet available if you are using Fontbakery.
+
 #### View report
 
 Once the check is finished, result summary is reported in warning log window,
@@ -122,5 +138,8 @@ to show the detail report.
 | ℹ️     | INFO  | Something useful, typically stats.                            |
 | ⏩     | SKIP  | The check does not apply to the given font.                   |
 | ✅     | PASS  | The font looks good for the given checking routine.           |
+
+These explanation texts are from Fontbakery; also apply to Fontspector.
+Symbols are the same as in HTML output.
 
 Certain environments show the symbols as emojis.

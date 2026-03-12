@@ -6,6 +6,7 @@ from subprocess import run
 import json
 import webbrowser
 from pathlib import Path
+from datetime import datetime
 
 RESULT_JSON = 'lastresult.json'
 RESULT_HTML = 'lastresult.html'
@@ -106,19 +107,91 @@ def _outroResultText(summary: dict) -> str:
     )
 
 
-def _outro(filename: str):
+def _addGlyphs(glyphsWithIssues, fontfile, glyphname, itemResults, subresult, moreinfo):
+    if glyphname not in glyphsWithIssues[fontfile]:
+        glyphsWithIssues[fontfile][glyphname] = []
+    glyphsWithIssues[fontfile][glyphname].append(
+        {
+            'check_id': itemResults['check_id'],
+            'code': subresult.get('code', ''),
+            'severity': subresult['severity'],
+            'moreinfo': moreinfo,
+        }
+    )
+
+
+def _getGlyphNamesWithIssue_FontSpector(jsonDoc) -> dict:
+    glyphsWithIssues = {}
+    results: dict[str, dict[str, list[dict]]] = jsonDoc['results']
+    for fontfile, fileResults in results.items():
+        glyphsWithIssues[fontfile] = {}
+        for sectionResults in fileResults.values():
+            for itemResults in sectionResults:
+                for subresult in itemResults['subresults']:
+                    if 'message' in subresult:
+                        if 'following glyph' in subresult['message']:
+                            for line in subresult['message'].splitlines():
+                                if line.startswith('* '):
+                                    _, glyphname, *moreinfo = line.split(' ')
+                                    _addGlyphs(glyphsWithIssues, fontfile, glyphname, itemResults, subresult, moreinfo)
+                        elif subresult['code'].endswith('-0020') or subresult['code'].endswith('-00A0'):
+                            moreinfo = subresult['message'].split(' ')
+                            glyphname = moreinfo[4][:-1]
+                            _addGlyphs(glyphsWithIssues, fontfile, glyphname, itemResults, subresult, moreinfo)
+    return glyphsWithIssues
+
+
+def _getGlyphNamesWithIssue(jsonDoc) -> dict:
+    if _executable() == config.fontspector_path:  # isFontSpector
+        return _getGlyphNamesWithIssue_FontSpector(jsonDoc)
+    else:
+        return {}  # TODO
+
+
+def _outroColorAndComment(font: fontforge.font, result: dict[str, list[dict]]):
+    def colorMarker(font: fontforge.font, glyph, data: list[dict], level: str, color: int) -> bool:
+        if level in (d['severity'] for d in data):
+            font.selection.select(('more',), glyph)
+            if config.plugin_config['glyph_result']['color']:
+                font[glyph].color = color
+            return True
+        return False
+
+    isFontSpector = (_executable() == config.fontspector_path)
+    font.selection.none()
+    for glyph, data in result.items():
+        if glyph in font:
+            if not colorMarker(font, glyph, data, 'FAIL', 0xff0000):  # TODO configuration
+                colorMarker(font, glyph, data, 'WARN', 0xffff00)  # TODO configuration
+            if config.plugin_config['glyph_result']['comment']:
+                font[glyph].comment = '\n'.join(font[glyph].comment.splitlines() + [
+                    '[{} {} result]'.format(
+                        datetime.today().strftime('%Y/%m/%d %H:%M'),
+                        'Fontspector' if isFontSpector else 'Fontbakery'
+                    ),
+                ] + [
+                    '{}: {} {} {}'.format(
+                        d['check_id'], d['severity'], d['code'], ' '.join(d['moreinfo']),
+                    ).strip() for d in data
+                ])
+
+
+def _outro(font: fontforge.font, filename: str, filepath: str):
     isFontSpector = (_executable() == config.fontspector_path)
     with open(_jsonFile(), 'r') as file:
         jsonDoc = json.load(file)
-        summary = jsonDoc['summary'] if isFontSpector else jsonDoc['result']
-        fontforge.logWarning(filename + ': ' + _outroResultText(summary))
-        ans = fontforge.ask(
-            _outroTitle(summary),
-            _outroMessage(summary) + '\n'
-            'Would you like to open details with the browser?',
-            ['_Yes', '_No'])
-        if ans == 0:
-            webbrowser.open('file://' + _htmlFile(), 1)
+    summary = jsonDoc['summary'] if isFontSpector else jsonDoc['result']
+    fontforge.logWarning(filename + ': ' + _outroResultText(summary))
+    glyphs = _getGlyphNamesWithIssue(jsonDoc)
+    if filepath in glyphs:
+        _outroColorAndComment(font, glyphs[filepath])
+    ans = fontforge.ask(
+        _outroTitle(summary),
+        _outroMessage(summary) + '\n'
+        'Would you like to open details with the browser?',
+        ['_Yes', '_No'])
+    if ans == 0:
+        webbrowser.open('file://' + _htmlFile(), 1)
 
 
 def _check_git_repo(path: Path) -> Optional[Path]:
@@ -164,7 +237,7 @@ def _ask_project_config(font: fontforge.font) -> Optional[str]:
 
 def _run_check_direct(font: fontforge.font):
     run(_cmdline(font.path, _ask_project_config(font)))
-    _outro(Path(font.path).name)
+    _outro(font, Path(font.path).name, font.path)
 
 
 def _run_check_tmpfile(font: fontforge.font):
@@ -178,7 +251,7 @@ def _run_check_tmpfile(font: fontforge.font):
         font.generate(testfile)
         font.changed = changed
         run(_cmdline(testfile, _ask_project_config(font)))
-        _outro(basename)
+        _outro(font, basename, testfile)
 
 
 def run_check(u, font: fontforge.font):
