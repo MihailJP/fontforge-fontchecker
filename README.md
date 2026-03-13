@@ -121,8 +121,6 @@ Regardless of config, problematic glyphs will be selected.
 
 Not all checks are supported.
 
-This feature is not yet available if you are using Fontbakery.
-
 #### View report
 
 Once the check is finished, result summary is reported in warning log window,

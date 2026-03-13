@@ -107,17 +107,19 @@ def _outroResultText(summary: dict) -> str:
     )
 
 
-def _addGlyphs(glyphsWithIssues, fontfile, glyphname, itemResults, subresult, moreinfo):
+def _addGlyphs(glyphsWithIssues: dict, fontfile: str, glyphname: str, glyphDataDict: dict):
     if glyphname not in glyphsWithIssues[fontfile]:
         glyphsWithIssues[fontfile][glyphname] = []
-    glyphsWithIssues[fontfile][glyphname].append(
-        {
-            'check_id': itemResults['check_id'],
-            'code': subresult.get('code', ''),
-            'severity': subresult['severity'],
-            'moreinfo': moreinfo,
-        }
-    )
+    glyphsWithIssues[fontfile][glyphname].append(glyphDataDict)
+
+
+def _addGlyphDataDict_FontSpector(itemResults: str, subresult, moreinfo: list[str]) -> dict:
+    return {
+        'check_id': itemResults['check_id'],
+        'code': subresult.get('code', ''),
+        'severity': subresult['severity'],
+        'moreinfo': moreinfo,
+    }
 
 
 def _getGlyphNamesWithIssue_FontSpector(jsonDoc) -> dict:
@@ -133,19 +135,64 @@ def _getGlyphNamesWithIssue_FontSpector(jsonDoc) -> dict:
                             for line in subresult['message'].splitlines():
                                 if line.startswith('* '):
                                     _, glyphname, *moreinfo = line.split(' ')
-                                    _addGlyphs(glyphsWithIssues, fontfile, glyphname, itemResults, subresult, moreinfo)
+                                    _addGlyphs(
+                                        glyphsWithIssues,
+                                        fontfile,
+                                        glyphname,
+                                        _addGlyphDataDict_FontSpector(itemResults, subresult, moreinfo),
+                                    )
                         elif subresult['code'].endswith('-0020') or subresult['code'].endswith('-00A0'):
                             moreinfo = subresult['message'].split(' ')
                             glyphname = moreinfo[4][:-1]
-                            _addGlyphs(glyphsWithIssues, fontfile, glyphname, itemResults, subresult, moreinfo)
+                            _addGlyphs(
+                                glyphsWithIssues,
+                                fontfile,
+                                glyphname,
+                                _addGlyphDataDict_FontSpector(itemResults, subresult, moreinfo),
+                            )
     return glyphsWithIssues
 
 
-def _getGlyphNamesWithIssue(jsonDoc) -> dict:
+def _addGlyphDataDict_FontBakery(checks, logs, moreinfo: list[str]) -> dict:
+    return {
+        'check_id': checks['key'][1].split(':')[1].removesuffix('>'),
+        'code': logs['message']['code'],
+        'severity': logs['status'],
+        'moreinfo': moreinfo,
+    }
+
+
+def _getGlyphNamesWithIssue_FontBakery(jsonDoc, filepath) -> dict:
+    glyphsWithIssues = {}
+    results: list[dict] = jsonDoc['sections']
+
+    for sectionResults in results:
+        for checks in sectionResults['checks']:
+            if 'filename' in checks:
+                fontfile = filepath
+                glyphsWithIssues.setdefault(fontfile, {})
+                for logs in checks['logs']:
+                    if 'following glyph' in logs['message']['message']:
+                        for line in logs['message']['message'].splitlines():
+                            if line.lstrip().startswith('- ') or line.lstrip().startswith('* '):
+                                _, glyphname, *moreinfo = line.lstrip().replace("\t", ' ').split(' ')
+                                if glyphname == 'Glyph' and moreinfo[0] == 'name:':
+                                    moreinfo.pop(0)
+                                    glyphname = moreinfo.pop(0)
+                                _addGlyphs(
+                                    glyphsWithIssues,
+                                    fontfile,
+                                    glyphname,
+                                    _addGlyphDataDict_FontBakery(checks, logs, moreinfo),
+                                )
+    return glyphsWithIssues
+
+
+def _getGlyphNamesWithIssue(jsonDoc, filepath) -> dict:
     if _executable() == config.fontspector_path:  # isFontSpector
         return _getGlyphNamesWithIssue_FontSpector(jsonDoc)
     else:
-        return {}  # TODO
+        return _getGlyphNamesWithIssue_FontBakery(jsonDoc, filepath)
 
 
 def _outroColorAndComment(font: fontforge.font, result: dict[str, list[dict]]):
@@ -182,7 +229,7 @@ def _outro(font: fontforge.font, filename: str, filepath: str):
         jsonDoc = json.load(file)
     summary = jsonDoc['summary'] if isFontSpector else jsonDoc['result']
     fontforge.logWarning(filename + ': ' + _outroResultText(summary))
-    glyphs = _getGlyphNamesWithIssue(jsonDoc)
+    glyphs = _getGlyphNamesWithIssue(jsonDoc, filepath)
     if filepath in glyphs:
         _outroColorAndComment(font, glyphs[filepath])
     ans = fontforge.ask(
