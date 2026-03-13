@@ -14,5 +14,13 @@ def fontforge_plugin_init(preferences_path=None, **_):
         callback=run_check.run_check,
         enable=run_check.enabled,
         context="Font",
-        name="Check font"
+        submenu="Check font",
+        name="Check current font",
+    )
+    fontforge.registerMenuItem(
+        callback=run_check.run_check_family,
+        enable=run_check.enabled,
+        context="Font",
+        submenu="Check font",
+        name="Check font family",
     )

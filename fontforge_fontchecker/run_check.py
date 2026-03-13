@@ -1,7 +1,7 @@
 from . import config
 import fontforge
 import tempfile
-from typing import Optional
+from typing import Optional, Iterable, Union
 from subprocess import run
 import json
 import webbrowser
@@ -35,7 +35,7 @@ def enabled(u, font) -> bool:
     return bool(_executable())
 
 
-def _cmdline(filename: str, confPath: Optional[str] = None) -> list[str]:
+def _cmdline(filename: Union[str, Iterable[str]], confPath: Optional[str] = None) -> list[str]:
     if _executable():
         isFontSpector = (_executable() == config.fontspector_path)
         cmdline = [_executable()]
@@ -57,7 +57,10 @@ def _cmdline(filename: str, confPath: Optional[str] = None) -> list[str]:
         cmdline.append(_jsonFile())
         cmdline.append('--html')
         cmdline.append(_htmlFile())
-        cmdline.append(filename)
+        if isinstance(filename, Iterable):
+            cmdline += list(filename)
+        else:
+            cmdline.append(filename)
         return cmdline
     else:
         raise RuntimeError('neither Fontbakery nor Fontspector available')
@@ -241,6 +244,32 @@ def _outro(font: fontforge.font, filename: str, filepath: str):
         webbrowser.open('file://' + _htmlFile(), 1)
 
 
+def _outro_multi(fonts: list[fontforge.font], filepaths: list[str]):
+    isFontSpector = (_executable() == config.fontspector_path)
+    with open(_jsonFile(), 'r') as file:
+        jsonDoc = json.load(file)
+    summary = jsonDoc['summary'] if isFontSpector else jsonDoc['result']
+    fontforge.logWarning(
+        '{} ({} font{}): {}'.format(
+            _getFamilyName(fonts[0]),
+            len(fonts),
+            '' if len(fonts) == 1 else 's',
+            _outroResultText(summary),
+        )
+    )
+    for font, filepath in zip(fonts, filepaths):
+        glyphs = _getGlyphNamesWithIssue(jsonDoc, filepath)
+        if filepath in glyphs:
+            _outroColorAndComment(font, glyphs[filepath])
+    ans = fontforge.ask(
+        _outroTitle(summary),
+        _outroMessage(summary) + '\n'
+        'Would you like to open details with the browser?',
+        ['_Yes', '_No'])
+    if ans == 0:
+        webbrowser.open('file://' + _htmlFile(), 1)
+
+
 def _check_git_repo(path: Path) -> Optional[Path]:
     chkPath = path.parent.absolute()
     for _ in range(len(chkPath.parts)):
@@ -282,6 +311,10 @@ def _ask_project_config(font: fontforge.font) -> Optional[str]:
     return projectConf
 
 
+def _basename(font: fontforge.font) -> str:
+    return font.default_base_filename or font.cidfontname or font.fontname
+
+
 def _run_check_direct(font: fontforge.font):
     run(_cmdline(font.path, _ask_project_config(font)))
     _outro(font, Path(font.path).name, font.path)
@@ -290,10 +323,7 @@ def _run_check_direct(font: fontforge.font):
 def _run_check_tmpfile(font: fontforge.font):
     with tempfile.TemporaryDirectory() as tmpdir:
         changed = font.changed
-        basename = (
-            (font.default_base_filename or font.cidfontname or font.fontname) +
-            '.' + config.plugin_config['check_as']
-        )
+        basename = _basename(font) + '.' + config.plugin_config['check_as']
         testfile = tmpdir + '/' + basename
         font.generate(testfile)
         font.changed = changed
@@ -301,24 +331,84 @@ def _run_check_tmpfile(font: fontforge.font):
         _outro(font, basename, testfile)
 
 
-def run_check(u, font: fontforge.font):
+def _getFamilyName(font: fontforge.font) -> str:
+    if name := [string for (language, strid, string) in font.sfnt_names if language == 0x409 and strid == 16]:
+        return name[0]
+    elif name := [string for (language, strid, string) in font.sfnt_names if language == 0x409 and strid == 21]:
+        return name[0]
+    elif font.cidfamilyname:
+        return font.cidfamilyname
+    else:
+        return font.familyname
+
+
+def _tmpfileRequired(font: fontforge.font) -> Optional[bool]:
     config.saveConf()
     if not Path(font.path).exists():
-        _run_check_tmpfile(font)
+        return True
     elif any(font.path.endswith(x) for x in ['.ttf', '.otf', '.ufo', '.ufo2', '.ufo3']):
         if font.changed:
-            ans = fontforge.ask(
-                'Font has been changed',
-                'The font\n' + font.path + '\n'
-                'has unsaved changes.\n'
-                'How would you like to check?',
-                ['Expor_t a temporary file', 'Check _existing font'],
-            )
-            if ans == 0:
-                _run_check_tmpfile(font)
-            else:
-                _run_check_direct(font)
+            return None
         else:
-            _run_check_direct(font)
+            return False
+    else:
+        return True
+
+
+def run_check(u, font: fontforge.font):
+    config.saveConf()
+    tmpfileRequired = _tmpfileRequired(font)
+    if tmpfileRequired is None:
+        ans = fontforge.ask(
+            'Font has been changed',
+            'The font\n' + font.path + '\n'
+            'has unsaved changes.\n'
+            'How would you like to check?',
+            ['Expor_t a temporary file', 'Check _existing font'],
+        )
+        tmpfileRequired = (ans == 0)
+    if tmpfileRequired:
+        _run_check_direct(font)
     else:
         _run_check_tmpfile(font)
+
+
+def _run_check_direct_multi(font: fontforge.font, fonts: Iterable[fontforge.font]):
+    run(_cmdline([f.path for f in fonts], _ask_project_config(font)))
+    _outro_multi(
+        fonts,
+        [f.path for f in fonts],
+    )
+
+
+def _run_check_tmpfile_multi(font: fontforge.font, fonts: Iterable[fontforge.font]):
+    testfiles = []
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for f in fonts:
+            changed = f.changed
+            basename = _basename(f) + '.' + config.plugin_config['check_as']
+            testfile = tmpdir + '/' + basename
+            f.generate(testfile)
+            f.changed = changed
+            testfiles.append(testfile)
+        run(_cmdline(testfiles, _ask_project_config(font)))
+        _outro_multi(fonts, testfiles)
+
+
+def run_check_family(u, font: fontforge.font):
+    config.saveConf()
+    fonts = [f for f in fontforge.fonts() if _getFamilyName(f) == _getFamilyName(font)]
+    tmpfileRequired = [_tmpfileRequired(f) for f in fonts]
+    if [t for t in tmpfileRequired if t is None]:
+        ans = fontforge.ask(
+            'Fonts have been changed',
+            "At least one font in family '" + _getFamilyName(font) + "'\n"
+            'has unsaved changes.\n'
+            'How would you like to check?',
+            ['Expor_t temporary files', 'Check _existing fonts'],
+        )
+        tmpfileRequired = [ans == 0]
+    if not any(tmpfileRequired):
+        _run_check_direct_multi(font, fonts)
+    else:
+        _run_check_tmpfile_multi(font, fonts)

@@ -98,6 +98,8 @@ Usage
 This plugin adds following items into "Tools" menu:
 
 - Check font
+  - Check current font
+  - Check font family
 
 ### Check font
 
@@ -105,6 +107,16 @@ For TTF or UFO, check will be done against the file existing on disk.
 If such file has unsaved changes, asks which you intend: checking the files
 on disk or checking exported font including changes.
 For other files, the font will be exported into a temporary directory to check.
+
+**"Check current font"** checks for a single font file.
+
+**"Check font family"** checks font family to which current font belongs.
+Only opened files. Closed fonts are excluded.
+Fonts with family name different from that of current one are ignored.
+
+If checks are done against TTF files directly (rather than through temporary
+files,) every font files (including closed ones) in the directory are checked
+as entire family.
 
 #### Project-specific configuration file
 
