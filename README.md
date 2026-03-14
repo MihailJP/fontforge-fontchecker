@@ -65,6 +65,16 @@ This plugin can highlight glyphs with issues in the font view.
 
 Enable or disable for 'color' or 'comment.'
 
+#### Color for FAIL and WARN
+
+If 'color' option is enabled, set what color shall be used for respective
+results. Hexadecimal color code such as #ffff00 or just ffff00. Defaults
+to #ff0000 (red) for FAIL and #ffff00 (lemon) for WARN.
+
+Optionally, color names such as 'crimson' (= #dc143c) or 'goldenrod'
+(= #daa520) are accepted if [webcolors](https://pypi.org/project/webcolors/)
+module is available. Color names are case-insensitive.
+
 ### Profile
 
 Profiles are what specifies which set of checks will be executed. Choose from

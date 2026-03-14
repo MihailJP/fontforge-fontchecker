@@ -207,12 +207,15 @@ def _outroColorAndComment(font: fontforge.font, result: dict[str, list[dict]]):
             return True
         return False
 
+    failColor = config.getColorVal(config.plugin_config['glyph_result']['FAIL'], 0xff0000)
+    warnColor = config.getColorVal(config.plugin_config['glyph_result']['WARN'], 0xffff00)
+
     isFontSpector = (_executable() == config.fontspector_path)
     font.selection.none()
     for glyph, data in result.items():
         if glyph in font:
-            if not colorMarker(font, glyph, data, 'FAIL', 0xff0000):  # TODO configuration
-                colorMarker(font, glyph, data, 'WARN', 0xffff00)  # TODO configuration
+            if not colorMarker(font, glyph, data, 'FAIL', failColor):
+                colorMarker(font, glyph, data, 'WARN', warnColor)
             if config.plugin_config['glyph_result']['comment']:
                 font[glyph].comment = '\n'.join(font[glyph].comment.splitlines() + [
                     '[{} {} result]'.format(

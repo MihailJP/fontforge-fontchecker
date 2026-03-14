@@ -2,7 +2,7 @@ import fontforge
 import shutil
 import os
 from tomlkit.toml_file import TOMLFile, TOMLDocument
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Union
 
 fontbakery_path = None
 fontspector_path = None
@@ -46,6 +46,9 @@ def _validateConfItem(key: str, defaultVal, *, choice: Optional[Iterable] = None
     if (key not in plugin_config) or (not isinstance(plugin_config[key], type(defaultVal))):
         plugin_config[key] = defaultVal  # load default
         loaded = False
+    if isinstance(defaultVal, dict) and isinstance(plugin_config[key], dict):
+        if missingKeys := defaultVal.keys() - plugin_config[key].keys():
+            plugin_config[key] |= dict((k, v) for k, v in defaultVal.items() if k in missingKeys)
     if choice:
         if not any(plugin_config[key] == x for x in choice):
             fontforge.logWarning("Invalid " + key + " '" + str(plugin_config[key]) + "' ignored")
@@ -66,7 +69,10 @@ def _validateConf():
     global profiles
     _validateConfItem('backend', 'auto', choice=['auto', 'fontbakery', 'fontspector'])
     _validateConfItem('check_as', 'ttf', choice=['ttf', 'ufo'])
-    _validateConfItem('glyph_result', {'color': False, 'comment': False})
+    _validateConfItem('glyph_result', {
+        'color': False, 'comment': False,
+        'FAIL': 0xff0000, 'WARN': 0xffff00,
+    })
     if _validateConfItem('profiles', profiles):
         profiles |= plugin_config['profiles']
     if _validateConfItem('profile', 'universal'):
@@ -126,6 +132,37 @@ def _writeBackendConf():
             conf.remove(i)
 
 
+def _colorValToStr(col: Union[str, int]) -> str:
+    if isinstance(col, int):
+        return format(col, '06x')
+    else:
+        return str(col).removeprefix('#')
+
+
+def _colorStrToVal(col: str) -> Union[str, int]:
+    try:
+        return int(str(col).removeprefix('#'), 16)
+    except ValueError:
+        return str(col)
+
+
+def getColorVal(col: Union[str, int], defaultCol: int = -1) -> str:
+    if isinstance(col, int):
+        return col
+    elif isinstance(colval := _colorStrToVal(col), int):
+        return colval
+    else:
+        try:
+            from webcolors import name_to_hex
+            return int(name_to_hex(str(col)).removeprefix('#'), 16)
+        except ModuleNotFoundError as e:
+            fontforge.logWarning(str(e))
+            return defaultCol  # default color if webcolors unavailable
+        except ValueError as e:
+            fontforge.logWarning(str(e))
+            return defaultCol  # default color if no such color
+
+
 def configInterface():
     ans = fontforge.askMulti(
         'Configuration',
@@ -162,6 +199,18 @@ def configInterface():
                 ],
             },
             {
+                'type': 'string',
+                'question': 'Color for FAIL',
+                'tag': 'color_fail',
+                'default': _colorValToStr(plugin_config['glyph_result']['FAIL']),
+            },
+            {
+                'type': 'string',
+                'question': 'Color for WARN',
+                'tag': 'color_warn',
+                'default': _colorValToStr(plugin_config['glyph_result']['WARN']),
+            },
+            {
                 'type': 'choice',
                 'question': 'Profile',
                 'tag': 'profile',
@@ -190,6 +239,8 @@ def configInterface():
         plugin_config['profile'] = ans['profile']
         plugin_config['glyph_result']['color'] = (ans['glyph_result'] and ('color' in ans['glyph_result']))
         plugin_config['glyph_result']['comment'] = (ans['glyph_result'] and ('comment' in ans['glyph_result']))
+        plugin_config['glyph_result']['FAIL'] = _colorStrToVal(ans['color_fail'] or '')
+        plugin_config['glyph_result']['WARN'] = _colorStrToVal(ans['color_warn'] or '')
         plugin_config['explicit_checks'] = [a.strip() for a in (ans['explicit_checks'] or '').split(',') if a]
         plugin_config['exclude_checks'] = [a.strip() for a in (ans['exclude_checks'] or '').split(',') if a]
         _writeBackendConf()
