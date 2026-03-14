@@ -57,7 +57,7 @@ def _cmdline(filename: Union[str, Iterable[str]], confPath: Optional[str] = None
         cmdline.append(_jsonFile())
         cmdline.append('--html')
         cmdline.append(_htmlFile())
-        if isinstance(filename, Iterable):
+        if isinstance(filename, Iterable) and (not isinstance(filename, str)):
             cmdline += list(filename)
         else:
             cmdline.append(filename)
@@ -371,9 +371,9 @@ def run_check(u, font: fontforge.font):
         )
         tmpfileRequired = (ans == 0)
     if tmpfileRequired:
-        _run_check_direct(font)
-    else:
         _run_check_tmpfile(font)
+    else:
+        _run_check_direct(font)
 
 
 def _run_check_direct_multi(font: fontforge.font, fonts: Iterable[fontforge.font]):
