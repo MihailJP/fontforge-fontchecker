@@ -84,6 +84,8 @@ def _validateConf():
         'timeout': 0,
         'skip': False,
     })
+    _validateConfItem('explicit_files', {})
+    _validateConfItem('exclude_files', {})
 
 
 def fontBakeryConfigFile() -> str:
@@ -124,13 +126,34 @@ def saveConf():
     TOMLFile(_plugin_dir + '/' + FONTSPECTOR_CONFIGFILE).write(fontspector_config)
 
 
+def _writeBackendExplicitExcludeFileConf():
+    check_ids = sorted(set(
+        c.strip() for c in list(plugin_config['explicit_files']) + list(plugin_config['exclude_files'])
+    ))
+    for check_id in check_ids:
+        fontspector_config.setdefault(check_id, {})
+        for purpose in ['explicit_files', 'exclude_files']:
+            if check_id in plugin_config[purpose]:
+                fontspector_config[check_id][purpose] \
+                    = plugin_config[purpose][check_id]
+            else:
+                if purpose in fontspector_config[check_id]:
+                    fontspector_config[check_id].remove(purpose)
+
+
 def _writeBackendConf():
+    import tomlkit
+    global fontbakery_config, fontspector_config
+    fontbakery_config = tomlkit.parse(FBFS_CONFIG_HEADER)
+    fontspector_config = tomlkit.parse(FBFS_CONFIG_HEADER)
+
     fontspector_config['explicit_checks'] \
         = fontbakery_config['explicit_checks'] \
         = plugin_config['explicit_checks']
     fontspector_config['exclude_checks'] \
         = fontbakery_config['exclude_checks'] \
         = plugin_config['exclude_checks']
+    _writeBackendExplicitExcludeFileConf()
     for conf in (fontspector_config, fontbakery_config):
         for i in [x[0] for x in conf.items() if not x[1]]:
             conf.remove(i)
@@ -172,6 +195,24 @@ def _timeoutStrToVal(prm: str) -> int:
         return max(int(str(prm)), 0)
     except ValueError:
         return 0
+
+
+def _parseExplicitExcludeFiles(prm: Optional[str]) -> dict[str, list[str]]:
+    if prm is None:
+        return {}
+    resultDict: dict[str, list[str]] = {}
+    prmlist = [el.strip() for el in prm.split(':')]
+    for k, v in zip(prmlist[::2], prmlist[1::2]):
+        resultDict.setdefault(k, [])
+        resultDict[k].append(v)
+    return resultDict
+
+
+def _dumpExplicitExcludeFiles(prm: dict[str, list[str]]) -> str:
+    if prm is None:
+        return ''
+    else:
+        return ':'.join(':'.join(k + ':' + p for p in v) for k, v in prm.items())
 
 
 def configInterface():
@@ -244,6 +285,18 @@ def configInterface():
             },
             {
                 'type': 'string',
+                'question': 'Explicit files per check\n(chkid:file:chkid:file:...)\n(Fontspector only)',
+                'tag': 'explicit_files',
+                'default': _dumpExplicitExcludeFiles(plugin_config['explicit_files']),
+            },
+            {
+                'type': 'string',
+                'question': 'Excluded files per check\n(chkid:file:chkid:file:...)\n(Fontspector only)',
+                'tag': 'exclude_files',
+                'default': _dumpExplicitExcludeFiles(plugin_config['exclude_files']),
+            },
+            {
+                'type': 'string',
                 'question': 'Network check timeout',
                 'tag': 'network_timeout',
                 'default': str(plugin_config['network_check']['timeout']),
@@ -272,5 +325,7 @@ def configInterface():
         plugin_config['exclude_checks'] = [a.strip() for a in (ans['exclude_checks'] or '').split(',') if a]
         plugin_config['network_check']['timeout'] = _timeoutStrToVal(ans['network_timeout'] or 0)
         plugin_config['network_check']['skip'] = bool(ans['network'] and ('skip' in ans['network']))
+        plugin_config['explicit_files'] = _parseExplicitExcludeFiles(ans['explicit_files'] or '')
+        plugin_config['exclude_files'] = _parseExplicitExcludeFiles(ans['exclude_files'] or '')
         _writeBackendConf()
         saveConf()

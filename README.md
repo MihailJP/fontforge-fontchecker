@@ -102,6 +102,13 @@ explicitly executed. If specified, only those checks are executed.
 Comma-separated list of check IDs (or part of them) which are
 not to be executed. If specified, those checks are skipped.
 
+### Explicit and excluded files
+
+**Colon**-separated list of check IDs and file names specified alternately.
+Specified checks shall be done only for or excluding specified files.
+
+Fontspector only. No wildcards.
+
 ### Network check timeout
 
 Fontspector and Fontbakery does some checks which requires network connection.

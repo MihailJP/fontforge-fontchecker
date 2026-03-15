@@ -72,3 +72,45 @@ def test_getColorVal(col, expected):
 ])
 def test_timeoutStrToVal(prm, expected):
     assert config._timeoutStrToVal(prm) == expected
+
+
+@pytest.mark.parametrize(('prm', 'expected'), [
+    (None, {}),
+    ('', {}),
+    (
+        'has_HVAR:MyFont-VF.ttf',
+        {
+            'has_HVAR': ['MyFont-VF.ttf'],
+        },
+    ),
+    (
+        'has_HVAR:MyFont-VF.ttf:nested_components:MyFont.ttf:nested_components:MyFont-VF.ttf',
+        {
+            'has_HVAR': ['MyFont-VF.ttf'],
+            'nested_components': ['MyFont.ttf', 'MyFont-VF.ttf'],
+        },
+    ),
+])
+def test_parseExplicitExcludeFiles(prm, expected):
+    assert config._parseExplicitExcludeFiles(prm) == expected
+
+
+@pytest.mark.parametrize(('prm', 'expected'), [
+    (None, ''),
+    ({}, ''),
+    (
+        {
+            'has_HVAR': ['MyFont-VF.ttf'],
+        },
+        'has_HVAR:MyFont-VF.ttf',
+    ),
+    (
+        {
+            'has_HVAR': ['MyFont-VF.ttf'],
+            'nested_components': ['MyFont.ttf', 'MyFont-VF.ttf'],
+        },
+        'has_HVAR:MyFont-VF.ttf:nested_components:MyFont.ttf:nested_components:MyFont-VF.ttf',
+    ),
+])
+def test_dumpExplicitExcludeFiles(prm, expected):
+    assert config._dumpExplicitExcludeFiles(prm) == expected
