@@ -109,6 +109,22 @@ Specified checks shall be done only for or excluding specified files.
 
 Fontspector only. No wildcards.
 
+### Ideal and acceptable maximum file sizes
+
+The 'file_size' check has options on maximum file size. If ideal maximum file
+size is exceeded, the test results WARN. If acceptable maximum is exceeded,
+the test FAILs. Leave them blank for default value (1&nbsp;MiB and 9&nbsp;MiB
+respectively.)
+
+You may add a unit like k, KB, or KiB (case-insensitive.)
+If no unit is included, it is in bytes.
+Note that 1&nbsp;MB = 1,000,000 bytes and 1&nbsp;MiB = 1,048,576 bytes.
+
+#### Maximum file size of minor issue
+
+Fontspector only. If this maximum is exceeded, the test results FATAL.
+Defaults to 10&nbsp;MiB for Google Fonts profile, or unset for Universal one.
+
 ### Network check timeout
 
 Fontspector and Fontbakery does some checks which requires network connection.

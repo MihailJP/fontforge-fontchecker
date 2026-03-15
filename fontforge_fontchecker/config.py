@@ -56,6 +56,25 @@ def _validateConfItem(key: str, defaultVal, *, choice: Optional[Iterable] = None
     return loaded
 
 
+def _setOrRemove(key: str, val):
+    if val is not None:
+        plugin_config[key] = val
+    elif key in plugin_config:
+        plugin_config.remove(key)
+
+
+def _validateConfItemType(key: str, typeobj: type, defaultVal=None):
+    if key in plugin_config:
+        try:
+            plugin_config[key] = typeobj(plugin_config[key])
+        except Exception as e:
+            if key in plugin_config:
+                fontforge.logWarning('Configuration error in {}! Using default {}\n{}: {}'.format(
+                    key, str(defaultVal), type(e).__name__, str(e)
+                ))
+            _setOrRemove(key, defaultVal)
+
+
 def _addDoNotEditHeader(config: TOMLDocument) -> TOMLDocument:
     import tomlkit
     myToml = config.as_string()
@@ -84,6 +103,9 @@ def _validateConf():
         'timeout': 0,
         'skip': False,
     })
+    _validateConfItemType('warn_size', int)
+    _validateConfItemType('fail_size', int)
+    _validateConfItemType('fatal_size', int)
     _validateConfItem('explicit_files', {})
     _validateConfItem('exclude_files', {})
 
@@ -127,8 +149,13 @@ def saveConf():
 
 
 def _writeBackendExplicitExcludeFileConf():
+    tags = ['warn_size', 'fail_size', 'fatal_size']
+    sizeconf = any(tag in plugin_config for tag in tags)
+    sizeconf_b = any(tag in plugin_config for tag in ['warn_size', 'fail_size'])
     check_ids = sorted(set(
-        c.strip() for c in list(plugin_config['explicit_files']) + list(plugin_config['exclude_files'])
+        c.strip() for c in
+        list(plugin_config['explicit_files']) + list(plugin_config['exclude_files']) +
+        (['file_size'] if sizeconf else [])
     ))
     for check_id in check_ids:
         fontspector_config.setdefault(check_id, {})
@@ -139,6 +166,13 @@ def _writeBackendExplicitExcludeFileConf():
             else:
                 if purpose in fontspector_config[check_id]:
                     fontspector_config[check_id].remove(purpose)
+        if check_id == 'file_size':
+            for tag in tags:
+                if tag in plugin_config:
+                    fontspector_config['file_size'][tag.upper()] = plugin_config[tag]
+                    if sizeconf_b and tag != 'fatal_size':
+                        fontbakery_config.setdefault('file_size', {})
+                        fontbakery_config['file_size'][tag.upper()] = plugin_config[tag]
 
 
 def _writeBackendConf():
@@ -213,6 +247,30 @@ def _dumpExplicitExcludeFiles(prm: dict[str, list[str]]) -> str:
         return ''
     else:
         return ':'.join(':'.join(k + ':' + p for p in v) for k, v in prm.items())
+
+
+def _filesizeExpressionToInt(filesizeExpression: str) -> int:
+    from fractions import Fraction
+
+    if not filesizeExpression:
+        return None
+    fs = filesizeExpression.lower()
+    if fs.endswith('b') or fs.endswith('o'):
+        fs = fs[:-1]
+    factor = 1
+    for s, f in [(p + i, f ** (v + 1)) for v, p in enumerate('kmgtpezyrq') for i, f in [('', 1000), ('i', 1024)]]:
+        if fs.endswith(s):
+            factor *= f
+            fs = fs.removesuffix(s)
+            continue
+    return int(Fraction(fs.strip()) * factor)
+
+
+def _intToFilesizeExpression(filesize: int) -> str:
+    if filesize is None:
+        return ''
+    else:
+        return str(filesize)
 
 
 def configInterface():
@@ -297,6 +355,24 @@ def configInterface():
             },
             {
                 'type': 'string',
+                'question': 'Ideal maximum file size',
+                'tag': 'warn_size',
+                'default': _intToFilesizeExpression(plugin_config.get('warn_size')),
+            },
+            {
+                'type': 'string',
+                'question': 'Acceptable maximum file size',
+                'tag': 'fail_size',
+                'default': _intToFilesizeExpression(plugin_config.get('fail_size')),
+            },
+            {
+                'type': 'string',
+                'question': 'Maximum file size of\nminor issue\n(Fontspector only)',
+                'tag': 'fatal_size',
+                'default': _intToFilesizeExpression(plugin_config.get('fatal_size')),
+            },
+            {
+                'type': 'string',
                 'question': 'Network check timeout',
                 'tag': 'network_timeout',
                 'default': str(plugin_config['network_check']['timeout']),
@@ -325,6 +401,9 @@ def configInterface():
         plugin_config['exclude_checks'] = [a.strip() for a in (ans['exclude_checks'] or '').split(',') if a]
         plugin_config['network_check']['timeout'] = _timeoutStrToVal(ans['network_timeout'] or 0)
         plugin_config['network_check']['skip'] = bool(ans['network'] and ('skip' in ans['network']))
+        _setOrRemove('warn_size', _filesizeExpressionToInt(ans['warn_size']))
+        _setOrRemove('fail_size', _filesizeExpressionToInt(ans['fail_size']))
+        _setOrRemove('fatal_size', _filesizeExpressionToInt(ans['fatal_size']))
         plugin_config['explicit_files'] = _parseExplicitExcludeFiles(ans['explicit_files'] or '')
         plugin_config['exclude_files'] = _parseExplicitExcludeFiles(ans['exclude_files'] or '')
         _writeBackendConf()

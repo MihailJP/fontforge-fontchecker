@@ -114,3 +114,45 @@ def test_parseExplicitExcludeFiles(prm, expected):
 ])
 def test_dumpExplicitExcludeFiles(prm, expected):
     assert config._dumpExplicitExcludeFiles(prm) == expected
+
+
+@pytest.mark.parametrize(('sizeexpr', 'expected'), [
+    (None, None),
+    ('', None),
+    ('0', 0),
+    ('900', 900),
+    ('900b', 900),
+    ('900B', 900),
+    ('900o', 900),
+    ('900O', 900),
+    ('900k', 900_000),
+    ('900kb', 900_000),
+    ('900kB', 900_000),
+    ('900ko', 900_000),
+    ('900kO', 900_000),
+    ('900K', 900_000),
+    ('900Kb', 900_000),
+    ('900KB', 900_000),
+    ('900Ko', 900_000),
+    ('900KO', 900_000),
+    ('900ki', 921_600),
+    ('900kib', 921_600),
+    ('900kiB', 921_600),
+    ('900kio', 921_600),
+    ('900kiO', 921_600),
+    ('900Ki', 921_600),
+    ('900Kib', 921_600),
+    ('900KiB', 921_600),
+    ('900Kio', 921_600),
+    ('900KiO', 921_600),
+    ('900KiO', 921_600),
+    ('1.5MiB', 1_572_864),
+    ('1.5 MiB', 1_572_864),
+    ('spam', ValueError),
+])
+def test_filesizeExpressionToInt(sizeexpr, expected):
+    if isinstance(expected, type) and issubclass(expected, Exception):
+        with pytest.raises(expected):
+            config._filesizeExpressionToInt(sizeexpr)
+    else:
+        assert config._filesizeExpressionToInt(sizeexpr) == expected
