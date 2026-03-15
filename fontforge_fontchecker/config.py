@@ -80,6 +80,10 @@ def _validateConf():
             profiles[plugin_config['profile']] = plugin_config['profile']
     _validateConfItem('explicit_checks', [])
     _validateConfItem('exclude_checks', [])
+    _validateConfItem('network_check', {
+        'timeout': 0,
+        'skip': False,
+    })
 
 
 def fontBakeryConfigFile() -> str:
@@ -163,6 +167,13 @@ def getColorVal(col: Union[str, int], defaultCol: int = -1) -> str:
             return defaultCol  # default color if no such color
 
 
+def _timeoutStrToVal(prm: str) -> int:
+    try:
+        return max(int(str(prm)), 0)
+    except ValueError:
+        return 0
+
+
 def configInterface():
     ans = fontforge.askMulti(
         'Configuration',
@@ -231,17 +242,35 @@ def configInterface():
                 'tag': 'exclude_checks',
                 'default': ','.join(plugin_config['exclude_checks']),
             },
+            {
+                'type': 'string',
+                'question': 'Network check timeout',
+                'tag': 'network_timeout',
+                'default': str(plugin_config['network_check']['timeout']),
+            },
+            {
+                'type': 'choice',
+                'question': '',
+                'tag': 'network',
+                'checks': True,
+                'multiple': True,
+                'answers': [
+                    {'name': 'Skip network check', 'tag': 'skip', 'default': plugin_config['network_check']['skip']},
+                ],
+            },
         ]
     )
     if ans:
         plugin_config['backend'] = ans['backend']
         plugin_config['check_as'] = ans['check_as']
         plugin_config['profile'] = ans['profile']
-        plugin_config['glyph_result']['color'] = (ans['glyph_result'] and ('color' in ans['glyph_result']))
-        plugin_config['glyph_result']['comment'] = (ans['glyph_result'] and ('comment' in ans['glyph_result']))
+        plugin_config['glyph_result']['color'] = bool(ans['glyph_result'] and ('color' in ans['glyph_result']))
+        plugin_config['glyph_result']['comment'] = bool(ans['glyph_result'] and ('comment' in ans['glyph_result']))
         plugin_config['glyph_result']['FAIL'] = _colorStrToVal(ans['color_fail'] or '')
         plugin_config['glyph_result']['WARN'] = _colorStrToVal(ans['color_warn'] or '')
         plugin_config['explicit_checks'] = [a.strip() for a in (ans['explicit_checks'] or '').split(',') if a]
         plugin_config['exclude_checks'] = [a.strip() for a in (ans['exclude_checks'] or '').split(',') if a]
+        plugin_config['network_check']['timeout'] = _timeoutStrToVal(ans['network_timeout'] or 0)
+        plugin_config['network_check']['skip'] = bool(ans['network'] and ('skip' in ans['network']))
         _writeBackendConf()
         saveConf()

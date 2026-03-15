@@ -58,6 +58,11 @@ def _cmdline(filename: Union[str, Iterable[str]], confPath: Optional[str] = None
         cmdline.append(_jsonFile())
         cmdline.append('--html')
         cmdline.append(_htmlFile())
+        if config.plugin_config['network_check']['skip']:
+            cmdline.append('--skip-network')
+        if config.plugin_config['network_check']['timeout'] > 0:
+            cmdline.append('--timeout')
+            cmdline.append(str(config.plugin_config['network_check']['timeout']))
         if isinstance(filename, Iterable) and (not isinstance(filename, str)):
             cmdline += list(filename)
         else:

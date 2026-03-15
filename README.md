@@ -102,6 +102,16 @@ explicitly executed. If specified, only those checks are executed.
 Comma-separated list of check IDs (or part of them) which are
 not to be executed. If specified, those checks are skipped.
 
+### Network check timeout
+
+Fontspector and Fontbakery does some checks which requires network connection.
+For example, 'fontdata_namecheck' connects to external service. Input positive
+value to set explicit timeout, or zero to unset.
+
+#### Skip network check
+
+If this option is set, instructs the backend to skip network-dependent checks.
+
 Usage
 -----
 

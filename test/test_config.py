@@ -61,3 +61,14 @@ def test_colorStrToVal(col, expected):
 ])
 def test_getColorVal(col, expected):
     assert config.getColorVal(col) == expected
+
+
+@pytest.mark.parametrize(('prm', 'expected'), [
+    ('60', 60),
+    ('-60', 0),
+    ('', 0),
+    ('0', 0),
+    ('spam', 0),
+])
+def test_timeoutStrToVal(prm, expected):
+    assert config._timeoutStrToVal(prm) == expected
