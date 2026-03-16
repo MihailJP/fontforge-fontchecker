@@ -90,6 +90,7 @@ def test_timeoutStrToVal(prm, expected):
             'nested_components': ['MyFont.ttf', 'MyFont-VF.ttf'],
         },
     ),
+    ('not enough parameters', {}),
 ])
 def test_parseExplicitExcludeFiles(prm, expected):
     assert config._parseExplicitExcludeFiles(prm) == expected
@@ -156,3 +157,92 @@ def test_filesizeExpressionToInt(sizeexpr, expected):
             config._filesizeExpressionToInt(sizeexpr)
     else:
         assert config._filesizeExpressionToInt(sizeexpr) == expected
+
+
+@pytest.mark.parametrize(('prm', 'expected'), [
+    (None, {}),
+    ('', {}),
+    (
+        'mandatory_glyphs:empty:FAIL:Because I think this would be really bad, actually',
+        {
+            'mandatory_glyphs': [
+                {
+                    'code': 'empty',
+                    'status': 'FAIL',
+                    'reason': 'Because I think this would be really bad, actually',
+                },
+            ],
+        },
+    ),
+    (
+        'spam:eggs:FAIL:test1:spam:ham:WARN:test2:ham:spam:fail:test3',
+        {
+            'spam': [
+                {
+                    'code': 'eggs',
+                    'status': 'FAIL',
+                    'reason': 'test1',
+                },
+                {
+                    'code': 'ham',
+                    'status': 'WARN',
+                    'reason': 'test2',
+                },
+            ],
+            'ham': [
+                {
+                    'code': 'spam',
+                    'status': 'FAIL',
+                    'reason': 'test3',
+                },
+            ],
+        },
+    ),
+    ('not:enough:parameters', {}),
+])
+def test_parseExplicitOverrides(prm, expected):
+    assert config._parseExplicitOverrides(prm) == expected
+
+
+@pytest.mark.parametrize(('prm', 'expected'), [
+    (None, ''),
+    ({}, ''),
+    (
+        {
+            'mandatory_glyphs': [
+                {
+                    'code': 'empty',
+                    'status': 'FAIL',
+                    'reason': 'Because I think this would be really bad, actually',
+                },
+            ],
+        },
+        'mandatory_glyphs:empty:FAIL:Because I think this would be really bad, actually',
+    ),
+    (
+        {
+            'spam': [
+                {
+                    'code': 'eggs',
+                    'status': 'FAIL',
+                    'reason': 'test1',
+                },
+                {
+                    'code': 'ham',
+                    'status': 'WARN',
+                    'reason': 'test2',
+                },
+            ],
+            'ham': [
+                {
+                    'code': 'spam',
+                    'status': 'FAIL',
+                    'reason': 'test3',
+                },
+            ],
+        },
+        'spam:eggs:FAIL:test1:spam:ham:WARN:test2:ham:spam:FAIL:test3',
+    ),
+])
+def test_dumpExplicitOverrides(prm, expected):
+    assert config._dumpExplicitOverrides(prm) == expected

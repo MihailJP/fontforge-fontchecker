@@ -117,6 +117,17 @@ You may add a unit like k, KB, or KiB (case-insensitive.)
 If no unit is included, it is in bytes.
 Note that 1&nbsp;MB = 1,000,000 bytes and 1&nbsp;MiB = 1,048,576 bytes.
 
+#### Overrides
+
+**Colon**-separated list of quadruples:
+
+- Check ID (Fontbakery only, e.g. mandatory_glyphs, transformed_components)
+- Message code (e.g. empty, transformed-components)
+- Status (case-insensitive, e.g. FAIL, WARN)
+- Reason (any text)
+
+Both between elements and between quadruples separate with colon.
+
 #### Network check timeout
 
 Fontspector and Fontbakery does some checks which requires network connection.
@@ -144,7 +155,7 @@ No wildcards.
 
 #### Maximum file size of minor issue
 
-Fontspector only. If this maximum is exceeded, the test results FATAL.
+If this maximum is exceeded, the test results FATAL.
 Defaults to 10&nbsp;MiB for Google Fonts profile, or unset for Universal one.
 
 Usage

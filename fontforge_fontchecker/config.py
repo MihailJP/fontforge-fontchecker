@@ -109,6 +109,7 @@ def _validateConf():
     _validateConfItemType('fatal_size', int)
     _validateConfItem('explicit_files', {})
     _validateConfItem('exclude_files', {})
+    _validateConfItem('overrides', {})
 
 
 def fontBakeryConfigFile() -> str:
@@ -188,9 +189,10 @@ def _writeBackendConf():
     fontspector_config['exclude_checks'] \
         = fontbakery_config['exclude_checks'] \
         = plugin_config['exclude_checks']
-    fontbakery_config['custom_order'] \
-        = plugin_config['custom_order']
+    fontbakery_config['custom_order'] = plugin_config['custom_order']
     _writeBackendExplicitExcludeFileConf()
+    fontbakery_config['overrides'] = plugin_config['overrides']
+    fontspector_config['overrides'] = sum(plugin_config['overrides'].values(), [])
     for conf in (fontspector_config, fontbakery_config):
         for i in [x[0] for x in conf.items() if not x[1]]:
             conf.remove(i)
@@ -274,6 +276,32 @@ def _intToFilesizeExpression(filesize: int) -> str:
         return ''
     else:
         return str(filesize)
+
+
+def _parseExplicitOverrides(prm: Optional[str]) -> dict[str, list[dict[str, str]]]:
+    if prm is None:
+        return {}
+    resultDict: dict[str, list[dict[str, str]]] = {}
+    prmlist = [el.strip() for el in prm.split(':')]
+    for check, code, status, reason in zip(prmlist[::4], prmlist[1::4], prmlist[2::4], prmlist[3::4]):
+        resultDict.setdefault(check, [])
+        resultDict[check].append({
+            'code': code,
+            'status': status.upper(),
+            'reason': reason,
+        })
+    return resultDict
+
+
+def _dumpExplicitOverrides(prm: dict[str, list[dict[str, str]]]) -> str:
+    if prm is None:
+        return ''
+    else:
+        return ':'.join(
+            ':'.join(
+                ':'.join([k, p['code'], p['status'], p['reason']]) for p in v
+            ) for k, v in prm.items()
+        )
 
 
 def configInterface():
@@ -366,6 +394,12 @@ def configInterface():
                     },
                     {
                         'type': 'string',
+                        'question': 'Overrides\n(chkid:code:status:reason:...)',
+                        'tag': 'overrides',
+                        'default': _dumpExplicitOverrides(plugin_config.get('overrides')),
+                    },
+                    {
+                        'type': 'string',
                         'question': 'Network check timeout',
                         'tag': 'network_timeout',
                         'default': str(plugin_config['network_check']['timeout']),
@@ -436,5 +470,6 @@ def configInterface():
         _setOrRemove('fatal_size', _filesizeExpressionToInt(ans['fatal_size']))
         plugin_config['explicit_files'] = _parseExplicitExcludeFiles(ans['explicit_files'] or '')
         plugin_config['exclude_files'] = _parseExplicitExcludeFiles(ans['exclude_files'] or '')
+        plugin_config['overrides'] = _parseExplicitOverrides(ans['overrides'] or '')
         _writeBackendConf()
         saveConf()
