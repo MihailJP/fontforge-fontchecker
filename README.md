@@ -146,6 +146,12 @@ Comma-separated list of custom check order.
 
 ### Fontspector specific configuration
 
+#### Plugins
+
+Comma-separated list of Fontspector plugins.
+
+You need to compile Fontspector by yourself to enable plugins.
+
 #### Explicit and excluded files
 
 **Colon**-separated list of check IDs and file names specified alternately.

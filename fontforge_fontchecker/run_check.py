@@ -43,6 +43,9 @@ def _cmdline(filename: Union[str, Iterable[str]], confPath: Optional[str] = None
         if isFontSpector:
             cmdline.append('-p')
             cmdline.append(config.plugin_config['profile'])
+            if config.plugin_config['plugins']:
+                cmdline.append('--plugins')
+                cmdline.append(','.join(config.plugin_config['plugins']))
         else:
             cmdline.append('check-' + config.plugin_config['profile'])
         cmdline.append('-q')

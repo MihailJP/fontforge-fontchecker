@@ -97,6 +97,7 @@ def _validateConf():
     if _validateConfItem('profile', 'universal'):
         if plugin_config['profile'] not in profiles:
             profiles[plugin_config['profile']] = plugin_config['profile']
+    _validateConfItem('plugins', [])
     _validateConfItem('explicit_checks', [])
     _validateConfItem('exclude_checks', [])
     _validateConfItem('custom_order', [])
@@ -432,6 +433,12 @@ def configInterface():
                 'questions': [
                     {
                         'type': 'string',
+                        'question': 'Fontspector plugins\n(comma-separated)',
+                        'tag': 'plugins',
+                        'default': ','.join(plugin_config['plugins']),
+                    },
+                    {
+                        'type': 'string',
                         'question': 'Explicit files per check\n(chkid:file:chkid:file:...)',
                         'tag': 'explicit_files',
                         'default': _dumpExplicitExcludeFiles(plugin_config['explicit_files']),
@@ -460,6 +467,7 @@ def configInterface():
         plugin_config['glyph_result']['comment'] = bool(ans['glyph_result'] and ('comment' in ans['glyph_result']))
         plugin_config['glyph_result']['FAIL'] = _colorStrToVal(ans['color_fail'] or '')
         plugin_config['glyph_result']['WARN'] = _colorStrToVal(ans['color_warn'] or '')
+        plugin_config['plugins'] = [a.strip() for a in (ans['plugins'] or '').split(',') if a]
         plugin_config['explicit_checks'] = [a.strip() for a in (ans['explicit_checks'] or '').split(',') if a]
         plugin_config['exclude_checks'] = [a.strip() for a in (ans['exclude_checks'] or '').split(',') if a]
         plugin_config['custom_order'] = [a.strip() for a in (ans['custom_order'] or '').split(',') if a]
