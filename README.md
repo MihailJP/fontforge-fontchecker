@@ -42,7 +42,9 @@ checker and click Configure to open.
 Configuration will be stored in
 `~/.config/fontforge/plugin/Font checker/config.toml` (for Linux.)
 
-### Backend
+### Frontend configuration
+
+#### Backend
 
 Choose from auto (default), Fontbakery, or Fontspector. If auto,
 Fontspector will be preferred.
@@ -51,7 +53,7 @@ Either or both must be installed to your system; make sure you add the
 backend executables to `PATH`. It is not this plugin itself which
 checks fonts.
 
-### Check as
+#### Check as
 
 Unfortunately the external check tools cannot check SFDs (Fontforge's native
 file type) directly. Fonts must be exported so that the tools can check.
@@ -59,13 +61,13 @@ file type) directly. Fonts must be exported so that the tools can check.
 Choose from TTF (default) or UFO. Between these two, usually TTF
 is encouraged. Fontbakery's check against UFOs is quite incomplete.
 
-### Result for glyphs
+#### Result for glyphs
 
 This plugin can highlight glyphs with issues in the font view.
 
 Enable or disable for 'color' or 'comment.'
 
-#### Color for FAIL and WARN
+##### Color for FAIL and WARN
 
 If 'color' option is enabled, set what color shall be used for respective
 results. Hexadecimal color code such as #ffff00 or just ffff00. Defaults
@@ -75,7 +77,9 @@ Optionally, color names such as 'crimson' (= #dc143c) or 'goldenrod'
 (= #daa520) are accepted if [webcolors](https://pypi.org/project/webcolors/)
 module is available. Color names are case-insensitive.
 
-### Profile
+### Common backend configuration
+
+#### Profile
 
 Profiles are what specifies which set of checks will be executed. Choose from
 the list. If you want to use custom profile, edit the configuration file.
@@ -92,28 +96,17 @@ These 5 profiles are available for both Fontbakery and Fontspector
 - ISO 15008 (in-car accessibility)
 - Fontwerk
 
-### Explicit checks
+#### Explicit checks
 
 Comma-separated list of check IDs (or part of them) which are to be
 explicitly executed. If specified, only those checks are executed.
 
-### Excluded checks
+#### Excluded checks
 
 Comma-separated list of check IDs (or part of them) which are
 not to be executed. If specified, those checks are skipped.
 
-### Custom order
-
-Comma-separated list of custom check order. Fontbakery only.
-
-### Explicit and excluded files
-
-**Colon**-separated list of check IDs and file names specified alternately.
-Specified checks shall be done only for or excluding specified files.
-
-Fontspector only. No wildcards.
-
-### Ideal and acceptable maximum file sizes
+#### Ideal and acceptable maximum file sizes
 
 The 'file_size' check has options on maximum file size. If ideal maximum file
 size is exceeded, the test results WARN. If acceptable maximum is exceeded,
@@ -124,20 +117,35 @@ You may add a unit like k, KB, or KiB (case-insensitive.)
 If no unit is included, it is in bytes.
 Note that 1&nbsp;MB = 1,000,000 bytes and 1&nbsp;MiB = 1,048,576 bytes.
 
-#### Maximum file size of minor issue
-
-Fontspector only. If this maximum is exceeded, the test results FATAL.
-Defaults to 10&nbsp;MiB for Google Fonts profile, or unset for Universal one.
-
-### Network check timeout
+#### Network check timeout
 
 Fontspector and Fontbakery does some checks which requires network connection.
 For example, 'fontdata_namecheck' connects to external service. Input positive
 value to set explicit timeout, or zero to unset.
 
-#### Skip network check
+##### Skip network check
 
 If this option is set, instructs the backend to skip network-dependent checks.
+
+### Fontbakery specific configuration
+
+#### Custom order
+
+Comma-separated list of custom check order.
+
+### Fontspector specific configuration
+
+#### Explicit and excluded files
+
+**Colon**-separated list of check IDs and file names specified alternately.
+Specified checks shall be done only for or excluding specified files.
+
+No wildcards.
+
+#### Maximum file size of minor issue
+
+Fontspector only. If this maximum is exceeded, the test results FATAL.
+Defaults to 10&nbsp;MiB for Google Fonts profile, or unset for Universal one.
 
 Usage
 -----

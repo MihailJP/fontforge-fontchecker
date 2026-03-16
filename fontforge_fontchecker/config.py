@@ -281,122 +281,142 @@ def configInterface():
         'Configuration',
         [
             {
-                'type': 'choice',
-                'question': 'Backend',
-                'tag': 'backend',
-                'checks': True,
-                'answers': [
-                    {'name': p.capitalize(), 'tag': p, 'default': plugin_config['backend'] == p}
-                    for p in ['auto', 'fontbakery', 'fontspector']
+                'category': 'Frontend setting',
+                'questions': [
+                    {
+                        'type': 'choice',
+                        'question': 'Backend',
+                        'tag': 'backend',
+                        'checks': True,
+                        'answers': [
+                            {'name': p.capitalize(), 'tag': p, 'default': plugin_config['backend'] == p}
+                            for p in ['auto', 'fontbakery', 'fontspector']
+                        ],
+                    },
+                    {
+                        'type': 'choice',
+                        'question': 'Check as',
+                        'tag': 'check_as',
+                        'checks': True,
+                        'answers': [
+                            {'name': p, 'tag': p.lower(), 'default': plugin_config['check_as'] == p.lower()}
+                            for p in ['TTF', 'UFO']
+                        ],
+                    },
+                    {
+                        'type': 'choice',
+                        'question': 'Result for glyphs',
+                        'tag': 'glyph_result',
+                        'checks': True,
+                        'multiple': True,
+                        'answers': [
+                            {'name': p, 'tag': p.lower(), 'default': plugin_config['glyph_result'][p.lower()]}
+                            for p in ['Color', 'Comment']
+                        ],
+                    },
+                    {
+                        'type': 'string',
+                        'question': 'Color for FAIL',
+                        'tag': 'color_fail',
+                        'default': _colorValToStr(plugin_config['glyph_result']['FAIL']),
+                    },
+                    {
+                        'type': 'string',
+                        'question': 'Color for WARN',
+                        'tag': 'color_warn',
+                        'default': _colorValToStr(plugin_config['glyph_result']['WARN']),
+                    },
                 ],
             },
             {
-                'type': 'choice',
-                'question': 'Check as',
-                'tag': 'check_as',
-                'checks': True,
-                'answers': [
-                    {'name': p, 'tag': p.lower(), 'default': plugin_config['check_as'] == p.lower()}
-                    for p in ['TTF', 'UFO']
+                'category': 'Common backend setting',
+                'questions': [
+                    {
+                        'type': 'choice',
+                        'question': 'Profile',
+                        'tag': 'profile',
+                        'answers': [
+                            {'name': p[1], 'tag': p[0], 'default': plugin_config['profile'] == p[0]}
+                            for p in profiles.items()
+                        ],
+                    },
+                    {
+                        'type': 'string',
+                        'question': 'Explicit checks\n(comma-separated)',
+                        'tag': 'explicit_checks',
+                        'default': ','.join(plugin_config['explicit_checks']),
+                    },
+                    {
+                        'type': 'string',
+                        'question': 'Excluded checks\n(comma-separated)',
+                        'tag': 'exclude_checks',
+                        'default': ','.join(plugin_config['exclude_checks']),
+                    },
+                    {
+                        'type': 'string',
+                        'question': 'Ideal maximum file size',
+                        'tag': 'warn_size',
+                        'default': _intToFilesizeExpression(plugin_config.get('warn_size')),
+                    },
+                    {
+                        'type': 'string',
+                        'question': 'Acceptable maximum file size',
+                        'tag': 'fail_size',
+                        'default': _intToFilesizeExpression(plugin_config.get('fail_size')),
+                    },
+                    {
+                        'type': 'string',
+                        'question': 'Network check timeout',
+                        'tag': 'network_timeout',
+                        'default': str(plugin_config['network_check']['timeout']),
+                    },
+                    {
+                        'type': 'choice',
+                        'question': '',
+                        'tag': 'network',
+                        'checks': True,
+                        'multiple': True,
+                        'answers': [
+                            {'name': 'Skip network check', 'tag': 'skip', 'default': plugin_config['network_check']['skip']},
+                        ],
+                    },
                 ],
             },
             {
-                'type': 'choice',
-                'question': 'Result for glyphs',
-                'tag': 'glyph_result',
-                'checks': True,
-                'multiple': True,
-                'answers': [
-                    {'name': p, 'tag': p.lower(), 'default': plugin_config['glyph_result'][p.lower()]}
-                    for p in ['Color', 'Comment']
+                'category': 'Fontbakery-specific setting',
+                'questions': [
+                    {
+                        'type': 'string',
+                        'question': 'Custom order\n(comma-separated)',
+                        'tag': 'custom_order',
+                        'default': ','.join(plugin_config['custom_order']),
+                    },
                 ],
             },
             {
-                'type': 'string',
-                'question': 'Color for FAIL',
-                'tag': 'color_fail',
-                'default': _colorValToStr(plugin_config['glyph_result']['FAIL']),
-            },
-            {
-                'type': 'string',
-                'question': 'Color for WARN',
-                'tag': 'color_warn',
-                'default': _colorValToStr(plugin_config['glyph_result']['WARN']),
-            },
-            {
-                'type': 'choice',
-                'question': 'Profile',
-                'tag': 'profile',
-                'answers': [
-                    {'name': p[1], 'tag': p[0], 'default': plugin_config['profile'] == p[0]}
-                    for p in profiles.items()
+                'category': 'Fontspector-specific setting',
+                'questions': [
+                    {
+                        'type': 'string',
+                        'question': 'Explicit files per check\n(chkid:file:chkid:file:...)',
+                        'tag': 'explicit_files',
+                        'default': _dumpExplicitExcludeFiles(plugin_config['explicit_files']),
+                    },
+                    {
+                        'type': 'string',
+                        'question': 'Excluded files per check\n(chkid:file:chkid:file:...)',
+                        'tag': 'exclude_files',
+                        'default': _dumpExplicitExcludeFiles(plugin_config['exclude_files']),
+                    },
+                    {
+                        'type': 'string',
+                        'question': 'Maximum file size of\nminor issue',
+                        'tag': 'fatal_size',
+                        'default': _intToFilesizeExpression(plugin_config.get('fatal_size')),
+                    },
                 ],
             },
-            {
-                'type': 'string',
-                'question': 'Explicit checks\n(comma-separated)',
-                'tag': 'explicit_checks',
-                'default': ','.join(plugin_config['explicit_checks']),
-            },
-            {
-                'type': 'string',
-                'question': 'Excluded checks\n(comma-separated)',
-                'tag': 'exclude_checks',
-                'default': ','.join(plugin_config['exclude_checks']),
-            },
-            {
-                'type': 'string',
-                'question': 'Custom order\n(comma-separated)\n(Fontbakery only)',
-                'tag': 'custom_order',
-                'default': ','.join(plugin_config['custom_order']),
-            },
-            {
-                'type': 'string',
-                'question': 'Explicit files per check\n(chkid:file:chkid:file:...)\n(Fontspector only)',
-                'tag': 'explicit_files',
-                'default': _dumpExplicitExcludeFiles(plugin_config['explicit_files']),
-            },
-            {
-                'type': 'string',
-                'question': 'Excluded files per check\n(chkid:file:chkid:file:...)\n(Fontspector only)',
-                'tag': 'exclude_files',
-                'default': _dumpExplicitExcludeFiles(plugin_config['exclude_files']),
-            },
-            {
-                'type': 'string',
-                'question': 'Ideal maximum file size',
-                'tag': 'warn_size',
-                'default': _intToFilesizeExpression(plugin_config.get('warn_size')),
-            },
-            {
-                'type': 'string',
-                'question': 'Acceptable maximum file size',
-                'tag': 'fail_size',
-                'default': _intToFilesizeExpression(plugin_config.get('fail_size')),
-            },
-            {
-                'type': 'string',
-                'question': 'Maximum file size of\nminor issue\n(Fontspector only)',
-                'tag': 'fatal_size',
-                'default': _intToFilesizeExpression(plugin_config.get('fatal_size')),
-            },
-            {
-                'type': 'string',
-                'question': 'Network check timeout',
-                'tag': 'network_timeout',
-                'default': str(plugin_config['network_check']['timeout']),
-            },
-            {
-                'type': 'choice',
-                'question': '',
-                'tag': 'network',
-                'checks': True,
-                'multiple': True,
-                'answers': [
-                    {'name': 'Skip network check', 'tag': 'skip', 'default': plugin_config['network_check']['skip']},
-                ],
-            },
-        ]
+        ],
     )
     if ans:
         plugin_config['backend'] = ans['backend']
