@@ -102,6 +102,10 @@ explicitly executed. If specified, only those checks are executed.
 Comma-separated list of check IDs (or part of them) which are
 not to be executed. If specified, those checks are skipped.
 
+### Custom order
+
+Comma-separated list of custom check order. Fontbakery only.
+
 ### Explicit and excluded files
 
 **Colon**-separated list of check IDs and file names specified alternately.

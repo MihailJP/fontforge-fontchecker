@@ -99,6 +99,7 @@ def _validateConf():
             profiles[plugin_config['profile']] = plugin_config['profile']
     _validateConfItem('explicit_checks', [])
     _validateConfItem('exclude_checks', [])
+    _validateConfItem('custom_order', [])
     _validateConfItem('network_check', {
         'timeout': 0,
         'skip': False,
@@ -187,6 +188,8 @@ def _writeBackendConf():
     fontspector_config['exclude_checks'] \
         = fontbakery_config['exclude_checks'] \
         = plugin_config['exclude_checks']
+    fontbakery_config['custom_order'] \
+        = plugin_config['custom_order']
     _writeBackendExplicitExcludeFileConf()
     for conf in (fontspector_config, fontbakery_config):
         for i in [x[0] for x in conf.items() if not x[1]]:
@@ -343,6 +346,12 @@ def configInterface():
             },
             {
                 'type': 'string',
+                'question': 'Custom order\n(comma-separated)\n(Fontbakery only)',
+                'tag': 'custom_order',
+                'default': ','.join(plugin_config['custom_order']),
+            },
+            {
+                'type': 'string',
                 'question': 'Explicit files per check\n(chkid:file:chkid:file:...)\n(Fontspector only)',
                 'tag': 'explicit_files',
                 'default': _dumpExplicitExcludeFiles(plugin_config['explicit_files']),
@@ -399,6 +408,7 @@ def configInterface():
         plugin_config['glyph_result']['WARN'] = _colorStrToVal(ans['color_warn'] or '')
         plugin_config['explicit_checks'] = [a.strip() for a in (ans['explicit_checks'] or '').split(',') if a]
         plugin_config['exclude_checks'] = [a.strip() for a in (ans['exclude_checks'] or '').split(',') if a]
+        plugin_config['custom_order'] = [a.strip() for a in (ans['custom_order'] or '').split(',') if a]
         plugin_config['network_check']['timeout'] = _timeoutStrToVal(ans['network_timeout'] or 0)
         plugin_config['network_check']['skip'] = bool(ans['network'] and ('skip' in ans['network']))
         _setOrRemove('warn_size', _filesizeExpressionToInt(ans['warn_size']))
