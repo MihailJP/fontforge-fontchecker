@@ -106,6 +106,10 @@ explicitly executed. If specified, only those checks are executed.
 Comma-separated list of check IDs (or part of them) which are
 not to be executed. If specified, those checks are skipped.
 
+#### Vendor ID
+
+Vendor ID check is activated if specified here. Or else it is skipped.
+
 #### Ideal and acceptable maximum file sizes
 
 The 'file_size' check has options on maximum file size. If ideal maximum file

@@ -101,6 +101,7 @@ def _validateConf():
     _validateConfItem('explicit_checks', [])
     _validateConfItem('exclude_checks', [])
     _validateConfItem('custom_order', [])
+    _validateConfItemType('vendor_id', str)
     _validateConfItem('network_check', {
         'timeout': 0,
         'skip': False,
@@ -191,6 +192,10 @@ def _writeBackendConf():
         = fontbakery_config['exclude_checks'] \
         = plugin_config['exclude_checks']
     fontbakery_config['custom_order'] = plugin_config['custom_order']
+    if 'vendor_id' in plugin_config:
+        fontspector_config['vendor_id'] \
+            = fontbakery_config['vendor_id'] \
+            = plugin_config['vendor_id']
     _writeBackendExplicitExcludeFileConf()
     fontbakery_config['overrides'] = plugin_config['overrides']
     fontspector_config['overrides'] = sum(plugin_config['overrides'].values(), [])
@@ -383,6 +388,12 @@ def configInterface():
                     },
                     {
                         'type': 'string',
+                        'question': 'Vendor ID',
+                        'tag': 'vendor_id',
+                        'default': plugin_config.get('vendor_id', ''),
+                    },
+                    {
+                        'type': 'string',
                         'question': 'Ideal maximum file size',
                         'tag': 'warn_size',
                         'default': _intToFilesizeExpression(plugin_config.get('warn_size')),
@@ -471,6 +482,7 @@ def configInterface():
         plugin_config['explicit_checks'] = [a.strip() for a in (ans['explicit_checks'] or '').split(',') if a]
         plugin_config['exclude_checks'] = [a.strip() for a in (ans['exclude_checks'] or '').split(',') if a]
         plugin_config['custom_order'] = [a.strip() for a in (ans['custom_order'] or '').split(',') if a]
+        _setOrRemove('vendor_id', ((ans['vendor_id'] or '').strip()[:4]) or None)
         plugin_config['network_check']['timeout'] = _timeoutStrToVal(ans['network_timeout'] or 0)
         plugin_config['network_check']['skip'] = bool(ans['network'] and ('skip' in ans['network']))
         _setOrRemove('warn_size', _filesizeExpressionToInt(ans['warn_size']))
