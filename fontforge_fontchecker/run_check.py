@@ -1,13 +1,15 @@
-from . import config
-import fontforge
-import tempfile
-from typing import Optional, Iterable, Union, Callable
-from subprocess import run
+from datetime import datetime
 import json
-import webbrowser
 import re
 from pathlib import Path
-from datetime import datetime
+from subprocess import run
+import tempfile
+from typing import Optional, Iterable, Union, Callable
+import webbrowser
+
+import fontforge
+
+from . import config
 
 RESULT_JSON = 'lastresult.json'
 RESULT_HTML = 'lastresult.html'

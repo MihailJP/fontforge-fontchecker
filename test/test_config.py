@@ -1,4 +1,5 @@
 import pytest
+
 from fontforge_fontchecker import config
 
 

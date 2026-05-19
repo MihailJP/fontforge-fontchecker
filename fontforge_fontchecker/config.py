@@ -1,8 +1,9 @@
-import fontforge
-import shutil
 import os
-from tomlkit.toml_file import TOMLFile, TOMLDocument
+import shutil
 from typing import Iterable, Optional, Union
+
+import fontforge
+from tomlkit.toml_file import TOMLFile, TOMLDocument
 
 fontbakery_path = None
 fontspector_path = None

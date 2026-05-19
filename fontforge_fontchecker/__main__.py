@@ -1,4 +1,5 @@
 import fontforge
+
 from . import config, run_check
 
 
