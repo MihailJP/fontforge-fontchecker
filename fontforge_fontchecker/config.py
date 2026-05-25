@@ -48,8 +48,8 @@ def _validateConfItem(key: str, defaultVal, *, choice: Optional[Iterable] = None
         plugin_config[key] = defaultVal  # load default
         loaded = False
     if isinstance(defaultVal, dict) and isinstance(plugin_config[key], dict):
-        if missingKeys := defaultVal.keys() - plugin_config[key].keys():
-            plugin_config[key] |= dict((k, v) for k, v in defaultVal.items() if k in missingKeys)
+        if missingKeys := defaultVal.keys() - plugin_config[key].keys():  # type: ignore
+            plugin_config[key] |= dict((k, v) for k, v in defaultVal.items() if k in missingKeys)  # type: ignore
     if choice:
         if not any(plugin_config[key] == x for x in choice):
             fontforge.logWarning("Invalid " + key + " '" + str(plugin_config[key]) + "' ignored")
@@ -94,10 +94,10 @@ def _validateConf():
         'FAIL': 0xff0000, 'WARN': 0xffff00,
     })
     if _validateConfItem('profiles', profiles):
-        profiles |= plugin_config['profiles']
+        profiles |= plugin_config['profiles']  # type: ignore
     if _validateConfItem('profile', 'universal'):
         if plugin_config['profile'] not in profiles:
-            profiles[plugin_config['profile']] = plugin_config['profile']
+            profiles[plugin_config['profile']] = plugin_config['profile']  # type: ignore
     _validateConfItem('plugins', [])
     _validateConfItem('explicit_checks', [])
     _validateConfItem('exclude_checks', [])
@@ -159,25 +159,24 @@ def _writeBackendExplicitExcludeFileConf():
     sizeconf_b = any(tag in plugin_config for tag in ['warn_size', 'fail_size'])
     check_ids = sorted(set(
         c.strip() for c in
-        list(plugin_config['explicit_files']) + list(plugin_config['exclude_files']) +
+        list(plugin_config['explicit_files']) + list(plugin_config['exclude_files']) +  # type: ignore
         (['file_size'] if sizeconf else [])
     ))
     for check_id in check_ids:
         fontspector_config.setdefault(check_id, {})
         for purpose in ['explicit_files', 'exclude_files']:
             if check_id in plugin_config[purpose]:
-                fontspector_config[check_id][purpose] \
-                    = plugin_config[purpose][check_id]
+                fontspector_config[check_id][purpose] = plugin_config[purpose][check_id]  # type: ignore
             else:
-                if purpose in fontspector_config[check_id]:
-                    fontspector_config[check_id].remove(purpose)
+                if purpose in fontspector_config[check_id]:  # type: ignore
+                    fontspector_config[check_id].remove(purpose)  # type: ignore
         if check_id == 'file_size':
             for tag in tags:
                 if tag in plugin_config:
-                    fontspector_config['file_size'][tag.upper()] = plugin_config[tag]
+                    fontspector_config['file_size'][tag.upper()] = plugin_config[tag]  # type: ignore
                     if sizeconf_b and tag != 'fatal_size':
                         fontbakery_config.setdefault('file_size', {})
-                        fontbakery_config['file_size'][tag.upper()] = plugin_config[tag]
+                        fontbakery_config['file_size'][tag.upper()] = plugin_config[tag]  # type: ignore
 
 
 def _writeBackendConf():
@@ -199,7 +198,7 @@ def _writeBackendConf():
             = plugin_config['vendor_id']
     _writeBackendExplicitExcludeFileConf()
     fontbakery_config['overrides'] = plugin_config['overrides']
-    fontspector_config['overrides'] = sum(plugin_config['overrides'].values(), [])
+    fontspector_config['overrides'] = sum(plugin_config['overrides'].values(), [])  # type: ignore
     for conf in (fontspector_config, fontbakery_config):
         for i in [x[0] for x in conf.items() if not x[1]]:
             conf.remove(i)
@@ -219,7 +218,7 @@ def _colorStrToVal(col: str) -> Union[str, int]:
         return str(col)
 
 
-def getColorVal(col: Union[str, int], defaultCol: int = -1) -> str:
+def getColorVal(col: Union[str, int], defaultCol: int = -1) -> int:
     if isinstance(col, int):
         return col
     elif isinstance(colval := _colorStrToVal(col), int):
@@ -261,7 +260,7 @@ def _dumpExplicitExcludeFiles(prm: dict[str, list[str]]) -> str:
         return ':'.join(':'.join(k + ':' + p for p in v) for k, v in prm.items())
 
 
-def _filesizeExpressionToInt(filesizeExpression: str) -> int:
+def _filesizeExpressionToInt(filesizeExpression: str) -> Optional[int]:
     from fractions import Fraction
 
     if not filesizeExpression:
@@ -345,7 +344,11 @@ def configInterface():
                         'checks': True,
                         'multiple': True,
                         'answers': [
-                            {'name': p, 'tag': p.lower(), 'default': plugin_config['glyph_result'][p.lower()]}
+                            {
+                                'name': p,
+                                'tag': p.lower(),
+                                'default': plugin_config['glyph_result'][p.lower()],  # pyright: ignore[reportIndexIssue]
+                            }
                             for p in ['Color', 'Comment']
                         ],
                     },
@@ -353,13 +356,13 @@ def configInterface():
                         'type': 'string',
                         'question': 'Color for FAIL',
                         'tag': 'color_fail',
-                        'default': _colorValToStr(plugin_config['glyph_result']['FAIL']),
+                        'default': _colorValToStr(plugin_config['glyph_result']['FAIL']),  # type: ignore
                     },
                     {
                         'type': 'string',
                         'question': 'Color for WARN',
                         'tag': 'color_warn',
-                        'default': _colorValToStr(plugin_config['glyph_result']['WARN']),
+                        'default': _colorValToStr(plugin_config['glyph_result']['WARN']),  # type: ignore
                     },
                 ],
             },
@@ -379,13 +382,13 @@ def configInterface():
                         'type': 'string',
                         'question': 'Explicit checks\n(comma-separated)',
                         'tag': 'explicit_checks',
-                        'default': ','.join(plugin_config['explicit_checks']),
+                        'default': ','.join(plugin_config['explicit_checks']),  # type: ignore
                     },
                     {
                         'type': 'string',
                         'question': 'Excluded checks\n(comma-separated)',
                         'tag': 'exclude_checks',
-                        'default': ','.join(plugin_config['exclude_checks']),
+                        'default': ','.join(plugin_config['exclude_checks']),  # type: ignore
                     },
                     {
                         'type': 'string',
@@ -397,25 +400,25 @@ def configInterface():
                         'type': 'string',
                         'question': 'Ideal maximum file size',
                         'tag': 'warn_size',
-                        'default': _intToFilesizeExpression(plugin_config.get('warn_size')),
+                        'default': _intToFilesizeExpression(plugin_config.get('warn_size')),  # type: ignore
                     },
                     {
                         'type': 'string',
                         'question': 'Acceptable maximum file size',
                         'tag': 'fail_size',
-                        'default': _intToFilesizeExpression(plugin_config.get('fail_size')),
+                        'default': _intToFilesizeExpression(plugin_config.get('fail_size')),  # type: ignore
                     },
                     {
                         'type': 'string',
                         'question': 'Overrides\n(chkid:code:status:reason:...)',
                         'tag': 'overrides',
-                        'default': _dumpExplicitOverrides(plugin_config.get('overrides')),
+                        'default': _dumpExplicitOverrides(plugin_config.get('overrides')),  # type: ignore
                     },
                     {
                         'type': 'string',
                         'question': 'Network check timeout',
                         'tag': 'network_timeout',
-                        'default': str(plugin_config['network_check']['timeout']),
+                        'default': str(plugin_config['network_check']['timeout']),  # type: ignore
                     },
                     {
                         'type': 'choice',
@@ -424,7 +427,11 @@ def configInterface():
                         'checks': True,
                         'multiple': True,
                         'answers': [
-                            {'name': 'Skip network check', 'tag': 'skip', 'default': plugin_config['network_check']['skip']},
+                            {
+                                'name': 'Skip network check',
+                                'tag': 'skip',
+                                'default': plugin_config['network_check']['skip']  # type: ignore
+                            },
                         ],
                     },
                 ],
@@ -436,7 +443,7 @@ def configInterface():
                         'type': 'string',
                         'question': 'Custom order\n(comma-separated)',
                         'tag': 'custom_order',
-                        'default': ','.join(plugin_config['custom_order']),
+                        'default': ','.join(plugin_config['custom_order']),  # type: ignore
                     },
                 ],
             },
@@ -447,50 +454,52 @@ def configInterface():
                         'type': 'string',
                         'question': 'Fontspector plugins\n(comma-separated)',
                         'tag': 'plugins',
-                        'default': ','.join(plugin_config['plugins']),
+                        'default': ','.join(plugin_config['plugins']),  # type: ignore
                     },
                     {
                         'type': 'string',
                         'question': 'Explicit files per check\n(chkid:file:chkid:file:...)',
                         'tag': 'explicit_files',
-                        'default': _dumpExplicitExcludeFiles(plugin_config['explicit_files']),
+                        'default': _dumpExplicitExcludeFiles(plugin_config['explicit_files']),  # type: ignore
                     },
                     {
                         'type': 'string',
                         'question': 'Excluded files per check\n(chkid:file:chkid:file:...)',
                         'tag': 'exclude_files',
-                        'default': _dumpExplicitExcludeFiles(plugin_config['exclude_files']),
+                        'default': _dumpExplicitExcludeFiles(plugin_config['exclude_files']),  # type: ignore
                     },
                     {
                         'type': 'string',
                         'question': 'Maximum file size of\nminor issue',
                         'tag': 'fatal_size',
-                        'default': _intToFilesizeExpression(plugin_config.get('fatal_size')),
+                        'default': _intToFilesizeExpression(plugin_config.get('fatal_size')),  # type: ignore
                     },
                 ],
             },
         ],
     )
     if ans:
+        assert isinstance(ans['glyph_result'], tuple)
+        assert isinstance(ans['network'], tuple)
         plugin_config['backend'] = ans['backend']
         plugin_config['check_as'] = ans['check_as']
         plugin_config['profile'] = ans['profile']
-        plugin_config['glyph_result']['color'] = bool(ans['glyph_result'] and ('color' in ans['glyph_result']))
-        plugin_config['glyph_result']['comment'] = bool(ans['glyph_result'] and ('comment' in ans['glyph_result']))
-        plugin_config['glyph_result']['FAIL'] = _colorStrToVal(ans['color_fail'] or '')
-        plugin_config['glyph_result']['WARN'] = _colorStrToVal(ans['color_warn'] or '')
-        plugin_config['plugins'] = [a.strip() for a in (ans['plugins'] or '').split(',') if a]
-        plugin_config['explicit_checks'] = [a.strip() for a in (ans['explicit_checks'] or '').split(',') if a]
-        plugin_config['exclude_checks'] = [a.strip() for a in (ans['exclude_checks'] or '').split(',') if a]
-        plugin_config['custom_order'] = [a.strip() for a in (ans['custom_order'] or '').split(',') if a]
-        _setOrRemove('vendor_id', ((ans['vendor_id'] or '').strip()[:4]) or None)
-        plugin_config['network_check']['timeout'] = _timeoutStrToVal(ans['network_timeout'] or 0)
-        plugin_config['network_check']['skip'] = bool(ans['network'] and ('skip' in ans['network']))
-        _setOrRemove('warn_size', _filesizeExpressionToInt(ans['warn_size']))
-        _setOrRemove('fail_size', _filesizeExpressionToInt(ans['fail_size']))
-        _setOrRemove('fatal_size', _filesizeExpressionToInt(ans['fatal_size']))
-        plugin_config['explicit_files'] = _parseExplicitExcludeFiles(ans['explicit_files'] or '')
-        plugin_config['exclude_files'] = _parseExplicitExcludeFiles(ans['exclude_files'] or '')
-        plugin_config['overrides'] = _parseExplicitOverrides(ans['overrides'] or '')
+        plugin_config['glyph_result']['color'] = bool(ans['glyph_result'] and ('color' in ans['glyph_result']))  # pyright: ignore[reportIndexIssue]  # noqa: E501
+        plugin_config['glyph_result']['comment'] = bool(ans['glyph_result'] and ('comment' in ans['glyph_result']))  # pyright: ignore[reportIndexIssue]  # noqa: E501
+        plugin_config['glyph_result']['FAIL'] = _colorStrToVal(str(ans['color_fail'] or ''))  # pyright: ignore[reportIndexIssue]  # noqa: E501
+        plugin_config['glyph_result']['WARN'] = _colorStrToVal(str(ans['color_warn'] or ''))  # pyright: ignore[reportIndexIssue]  # noqa: E501
+        plugin_config['plugins'] = [a.strip() for a in str(ans['plugins'] or '').split(',') if a]
+        plugin_config['explicit_checks'] = [a.strip() for a in str(ans['explicit_checks'] or '').split(',') if a]
+        plugin_config['exclude_checks'] = [a.strip() for a in str(ans['exclude_checks'] or '').split(',') if a]
+        plugin_config['custom_order'] = [a.strip() for a in str(ans['custom_order'] or '').split(',') if a]
+        _setOrRemove('vendor_id', (str(ans['vendor_id'] or '').strip()[:4]) or None)
+        plugin_config['network_check']['timeout'] = _timeoutStrToVal(str(ans['network_timeout'] or '0'))  # pyright: ignore[reportIndexIssue]  # noqa: E501
+        plugin_config['network_check']['skip'] = bool(ans['network'] and ('skip' in ans['network']))  # pyright: ignore[reportIndexIssue]  # noqa: E501
+        _setOrRemove('warn_size', _filesizeExpressionToInt(str(ans['warn_size'])))
+        _setOrRemove('fail_size', _filesizeExpressionToInt(str(ans['fail_size'])))
+        _setOrRemove('fatal_size', _filesizeExpressionToInt(str(ans['fatal_size'])))
+        plugin_config['explicit_files'] = _parseExplicitExcludeFiles(str(ans['explicit_files'] or ''))
+        plugin_config['exclude_files'] = _parseExplicitExcludeFiles(str(ans['exclude_files'] or ''))
+        plugin_config['overrides'] = _parseExplicitOverrides(str(ans['overrides'] or ''))
         _writeBackendConf()
         saveConf()

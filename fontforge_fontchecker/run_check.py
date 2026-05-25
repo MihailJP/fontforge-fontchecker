@@ -44,12 +44,12 @@ def _cmdline(filename: Union[str, Iterable[str]], confPath: Optional[str] = None
         cmdline = [_executable()]
         if isFontSpector:
             cmdline.append('-p')
-            cmdline.append(config.plugin_config['profile'])
+            cmdline.append(config.plugin_config['profile'])  # type: ignore
             if config.plugin_config['plugins']:
                 cmdline.append('--plugins')
-                cmdline.append(','.join(config.plugin_config['plugins']))
+                cmdline.append(','.join(config.plugin_config['plugins']))  # type: ignore
         else:
-            cmdline.append('check-' + config.plugin_config['profile'])
+            cmdline.append('check-' + config.plugin_config['profile'])  # type: ignore
         cmdline.append('-q')
         cmdline.append('--full-lists')
         cmdline.append('-l')
@@ -63,16 +63,16 @@ def _cmdline(filename: Union[str, Iterable[str]], confPath: Optional[str] = None
         cmdline.append(_jsonFile())
         cmdline.append('--html')
         cmdline.append(_htmlFile())
-        if config.plugin_config['network_check']['skip']:
+        if config.plugin_config['network_check']['skip']:  # pyright: ignore[reportIndexIssue]
             cmdline.append('--skip-network')
-        if config.plugin_config['network_check']['timeout'] > 0:
+        if config.plugin_config['network_check']['timeout'] > 0:  # type: ignore
             cmdline.append('--timeout')
-            cmdline.append(str(config.plugin_config['network_check']['timeout']))
+            cmdline.append(str(config.plugin_config['network_check']['timeout']))  # pyright: ignore[reportIndexIssue]
         if isinstance(filename, Iterable) and (not isinstance(filename, str)):
             cmdline += list(filename)
         else:
             cmdline.append(filename)
-        return cmdline
+        return cmdline  # type: ignore
     else:
         raise RuntimeError('neither Fontbakery nor Fontspector available')
 
@@ -137,7 +137,7 @@ def _addGlyphs(glyphsWithIssues: dict, fontfile: str, glyphname: str, font: font
     glyphsWithIssues[fontfile][_glyphname].append(glyphDataDict)
 
 
-def _addGlyphDataDict_FontSpector(itemResults: str, subresult, moreinfo: list[str]) -> dict:
+def _addGlyphDataDict_FontSpector(itemResults: dict, subresult, moreinfo: list[str]) -> dict:
     return {
         'check_id': itemResults['check_id'],
         'code': subresult.get('code', ''),
@@ -259,13 +259,13 @@ def _outroColorAndComment(font: fontforge.font, result: dict[str, list[dict]]):
         if level in (d['severity'] for d in data):
             if glyph in font:
                 font.selection.select(('more',), glyph)
-            if config.plugin_config['glyph_result']['color']:
+            if config.plugin_config['glyph_result']['color']:  # pyright: ignore[reportIndexIssue]
                 font[glyph].color = color
             return True
         return False
 
-    failColor = config.getColorVal(config.plugin_config['glyph_result']['FAIL'], 0xff0000)
-    warnColor = config.getColorVal(config.plugin_config['glyph_result']['WARN'], 0xffff00)
+    failColor = config.getColorVal(config.plugin_config['glyph_result']['FAIL'], 0xff0000)  # pyright: ignore[reportIndexIssue, reportArgumentType]  # noqa: E501
+    warnColor = config.getColorVal(config.plugin_config['glyph_result']['WARN'], 0xffff00)  # pyright: ignore[reportIndexIssue, reportArgumentType]  # noqa: E501
 
     isFontSpector = (_executable() == config.fontspector_path)
     font.selection.none()
@@ -273,7 +273,7 @@ def _outroColorAndComment(font: fontforge.font, result: dict[str, list[dict]]):
         if glyph in font:
             if not colorMarker(font, glyph, data, 'FAIL', failColor):
                 colorMarker(font, glyph, data, 'WARN', warnColor)
-            if config.plugin_config['glyph_result']['comment']:
+            if config.plugin_config['glyph_result']['comment']:  # pyright: ignore[reportIndexIssue]
                 font[glyph].comment = '\n'.join(font[glyph].comment.splitlines() + [
                     '[{} {} result]'.format(
                         datetime.today().strftime('%Y/%m/%d %H:%M'),
@@ -299,7 +299,7 @@ def _outro(font: fontforge.font, filename: str, filepath: str):
         _outroTitle(summary),
         _outroMessage(summary) + '\n'
         'Would you like to open details with the browser?',
-        ['_Yes', '_No'])
+        ['_Yes', '_No'])  # type: ignore
     if ans == 0:
         webbrowser.open('file://' + _htmlFile(), 1)
 
@@ -325,7 +325,7 @@ def _outro_multi(fonts: list[fontforge.font], filepaths: list[str]):
         _outroTitle(summary),
         _outroMessage(summary) + '\n'
         'Would you like to open details with the browser?',
-        ['_Yes', '_No'])
+        ['_Yes', '_No'])  # type: ignore
     if ans == 0:
         webbrowser.open('file://' + _htmlFile(), 1)
 
@@ -365,7 +365,7 @@ def _ask_project_config(font: fontforge.font) -> Optional[str]:
             'Project-specific configuration file\n' +
             projectConf + '\n'
             'was found. Use it?',
-            ['_Yes', '_No'])
+            ['_Yes', '_No'])  # type: ignore
         if ans == 1:
             projectConf = None
     return projectConf
@@ -383,7 +383,7 @@ def _run_check_direct(font: fontforge.font):
 def _run_check_tmpfile(font: fontforge.font):
     with tempfile.TemporaryDirectory() as tmpdir:
         changed = font.changed
-        basename = _basename(font) + '.' + config.plugin_config['check_as']
+        basename = _basename(font) + '.' + str(config.plugin_config['check_as'])
         testfile = tmpdir + '/' + basename
         font.generate(testfile)
         font.changed = changed
@@ -424,7 +424,7 @@ def run_check(u, font: fontforge.font):
             'The font\n' + font.path + '\n'
             'has unsaved changes.\n'
             'How would you like to check?',
-            ['Expor_t a temporary file', 'Check _existing font'],
+            ['Expor_t a temporary file', 'Check _existing font'],  # type: ignore
         )
         tmpfileRequired = (ans == 0)
     if tmpfileRequired:
@@ -436,7 +436,7 @@ def run_check(u, font: fontforge.font):
 def _run_check_direct_multi(font: fontforge.font, fonts: Iterable[fontforge.font]):
     run(_cmdline([f.path for f in fonts], _ask_project_config(font)))
     _outro_multi(
-        fonts,
+        list(fonts),
         [f.path for f in fonts],
     )
 
@@ -446,13 +446,13 @@ def _run_check_tmpfile_multi(font: fontforge.font, fonts: Iterable[fontforge.fon
     with tempfile.TemporaryDirectory() as tmpdir:
         for f in fonts:
             changed = f.changed
-            basename = _basename(f) + '.' + config.plugin_config['check_as']
+            basename = _basename(f) + '.' + str(config.plugin_config['check_as'])
             testfile = tmpdir + '/' + basename
             f.generate(testfile)
             f.changed = changed
             testfiles.append(testfile)
         run(_cmdline(testfiles, _ask_project_config(font)))
-        _outro_multi(fonts, testfiles)
+        _outro_multi(list(fonts), testfiles)
 
 
 def run_check_family(u, font: fontforge.font):
@@ -465,7 +465,7 @@ def run_check_family(u, font: fontforge.font):
             "At least one font in family '" + _getFamilyName(font) + "'\n"
             'has unsaved changes.\n'
             'How would you like to check?',
-            ['Expor_t temporary files', 'Check _existing fonts'],
+            ['Expor_t temporary files', 'Check _existing fonts'],  # type: ignore
         )
         tmpfileRequired = [ans == 0]
     if not any(tmpfileRequired):

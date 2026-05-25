@@ -9,6 +9,7 @@ def fontforge_plugin_config(**_):
 
 def fontforge_plugin_init(preferences_path=None, **_):
     config.checkFontTools()
+    assert preferences_path is not None
     config.loadConf(preferences_path)
 
     fontforge.registerMenuItem(
