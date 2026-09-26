@@ -28,6 +28,7 @@ profiles = {
     'googlefonts': 'Google Fonts',
     'iso15008': 'ISO 15008 (in-car accessibility)',
     'fontwerk': 'Fontwerk',
+    'monotype': 'Monotype (Fontspector 1.8.0+)',
     'adobefonts': 'Adobe Fonts',
     'fontbureau': 'Font Bureau',
     'microsoft': 'Microsoft',
