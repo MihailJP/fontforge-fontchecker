@@ -6,6 +6,8 @@ import fontforge
 from tomlkit.toml_file import TOMLFile
 from tomlkit.toml_document import TOMLDocument
 
+from .translation import tr
+
 fontbakery_path = None
 fontspector_path = None
 fontbakery_config = TOMLDocument()
@@ -54,7 +56,7 @@ def _validateConfItem(key: str, defaultVal, *, choice: Optional[Iterable] = None
             plugin_config[key] |= dict((k, v) for k, v in defaultVal.items() if k in missingKeys)  # type: ignore
     if choice:
         if not any(plugin_config[key] == x for x in choice):
-            fontforge.logWarning("Invalid " + key + " '" + str(plugin_config[key]) + "' ignored")
+            fontforge.logWarning(tr.get("Invalid {} '{}' ignored").format(key, str(plugin_config[key])))
             plugin_config[key] = defaultVal
     return loaded
 
@@ -72,7 +74,7 @@ def _validateConfItemType(key: str, typeobj: type, defaultVal=None):
             plugin_config[key] = typeobj(plugin_config[key])
         except Exception as e:
             if key in plugin_config:
-                fontforge.logWarning('Configuration error in {}! Using default {}\n{}: {}'.format(
+                fontforge.logWarning(tr.get('Configuration error in {}! Using default {}\n{}: {}').format(
                     key, str(defaultVal), type(e).__name__, str(e)
                 ))
             _setOrRemove(key, defaultVal)
@@ -317,21 +319,21 @@ def configInterface():
         'Configuration',
         [
             {
-                'category': 'Frontend setting',
+                'category': tr.get('Frontend setting'),
                 'questions': [
                     {
                         'type': 'choice',
-                        'question': 'Backend',
+                        'question': tr.get('Backend'),
                         'tag': 'backend',
                         'checks': True,
                         'answers': [
-                            {'name': p.capitalize(), 'tag': p, 'default': plugin_config['backend'] == p}
+                            {'name': tr.get(p.capitalize()), 'tag': p, 'default': plugin_config['backend'] == p}
                             for p in ['auto', 'fontbakery', 'fontspector']
                         ],
                     },
                     {
                         'type': 'choice',
-                        'question': 'Check as',
+                        'question': tr.get('Check as'),
                         'tag': 'check_as',
                         'checks': True,
                         'answers': [
@@ -341,13 +343,13 @@ def configInterface():
                     },
                     {
                         'type': 'choice',
-                        'question': 'Result for glyphs',
+                        'question': tr.get('Result for glyphs'),
                         'tag': 'glyph_result',
                         'checks': True,
                         'multiple': True,
                         'answers': [
                             {
-                                'name': p,
+                                'name': tr.get(p),
                                 'tag': p.lower(),
                                 'default': plugin_config['glyph_result'][p.lower()],  # pyright: ignore[reportIndexIssue]
                             }
@@ -356,69 +358,69 @@ def configInterface():
                     },
                     {
                         'type': 'string',
-                        'question': 'Color for FAIL',
+                        'question': tr.get('Color for FAIL'),
                         'tag': 'color_fail',
                         'default': _colorValToStr(plugin_config['glyph_result']['FAIL']),  # type: ignore
                     },
                     {
                         'type': 'string',
-                        'question': 'Color for WARN',
+                        'question': tr.get('Color for WARN'),
                         'tag': 'color_warn',
                         'default': _colorValToStr(plugin_config['glyph_result']['WARN']),  # type: ignore
                     },
                 ],
             },
             {
-                'category': 'Common backend setting',
+                'category': tr.get('Common backend setting'),
                 'questions': [
                     {
                         'type': 'choice',
-                        'question': 'Profile',
+                        'question': tr.get('Profile'),
                         'tag': 'profile',
                         'answers': [
-                            {'name': p[1], 'tag': p[0], 'default': plugin_config['profile'] == p[0]}
+                            {'name': tr.get(p[1]), 'tag': p[0], 'default': plugin_config['profile'] == p[0]}
                             for p in profiles.items()
                         ],
                     },
                     {
                         'type': 'string',
-                        'question': 'Explicit checks\n(comma-separated)',
+                        'question': tr.get('Explicit checks\n(comma-separated)'),
                         'tag': 'explicit_checks',
                         'default': ','.join(plugin_config['explicit_checks']),  # type: ignore
                     },
                     {
                         'type': 'string',
-                        'question': 'Excluded checks\n(comma-separated)',
+                        'question': tr.get('Excluded checks\n(comma-separated)'),
                         'tag': 'exclude_checks',
                         'default': ','.join(plugin_config['exclude_checks']),  # type: ignore
                     },
                     {
                         'type': 'string',
-                        'question': 'Vendor ID',
+                        'question': tr.get('Vendor ID'),
                         'tag': 'vendor_id',
                         'default': plugin_config.get('vendor_id', ''),
                     },
                     {
                         'type': 'string',
-                        'question': 'Ideal maximum file size',
+                        'question': tr.get('Ideal maximum file size'),
                         'tag': 'warn_size',
                         'default': _intToFilesizeExpression(plugin_config.get('warn_size')),  # type: ignore
                     },
                     {
                         'type': 'string',
-                        'question': 'Acceptable maximum file size',
+                        'question': tr.get('Acceptable maximum file size'),
                         'tag': 'fail_size',
                         'default': _intToFilesizeExpression(plugin_config.get('fail_size')),  # type: ignore
                     },
                     {
                         'type': 'string',
-                        'question': 'Overrides\n(chkid:code:status:reason:...)',
+                        'question': tr.get('Overrides\n(chkid:code:status:reason:...)'),
                         'tag': 'overrides',
                         'default': _dumpExplicitOverrides(plugin_config.get('overrides')),  # type: ignore
                     },
                     {
                         'type': 'string',
-                        'question': 'Network check timeout',
+                        'question': tr.get('Network check timeout'),
                         'tag': 'network_timeout',
                         'default': str(plugin_config['network_check']['timeout']),  # type: ignore
                     },
@@ -430,7 +432,7 @@ def configInterface():
                         'multiple': True,
                         'answers': [
                             {
-                                'name': 'Skip network check',
+                                'name': tr.get('Skip network check'),
                                 'tag': 'skip',
                                 'default': plugin_config['network_check']['skip']  # type: ignore
                             },
@@ -439,40 +441,40 @@ def configInterface():
                 ],
             },
             {
-                'category': 'Fontbakery-specific setting',
+                'category': tr.get('Fontbakery-specific setting'),
                 'questions': [
                     {
                         'type': 'string',
-                        'question': 'Custom order\n(comma-separated)',
+                        'question': tr.get('Custom order\n(comma-separated)'),
                         'tag': 'custom_order',
                         'default': ','.join(plugin_config['custom_order']),  # type: ignore
                     },
                 ],
             },
             {
-                'category': 'Fontspector-specific setting',
+                'category': tr.get('Fontspector-specific setting'),
                 'questions': [
                     {
                         'type': 'string',
-                        'question': 'Fontspector plugins\n(comma-separated)',
+                        'question': tr.get('Fontspector plugins\n(comma-separated)'),
                         'tag': 'plugins',
                         'default': ','.join(plugin_config['plugins']),  # type: ignore
                     },
                     {
                         'type': 'string',
-                        'question': 'Explicit files per check\n(chkid:file:chkid:file:...)',
+                        'question': tr.get('Explicit files per check\n(chkid:file:chkid:file:...)'),
                         'tag': 'explicit_files',
                         'default': _dumpExplicitExcludeFiles(plugin_config['explicit_files']),  # type: ignore
                     },
                     {
                         'type': 'string',
-                        'question': 'Excluded files per check\n(chkid:file:chkid:file:...)',
+                        'question': tr.get('Excluded files per check\n(chkid:file:chkid:file:...)'),
                         'tag': 'exclude_files',
                         'default': _dumpExplicitExcludeFiles(plugin_config['exclude_files']),  # type: ignore
                     },
                     {
                         'type': 'string',
-                        'question': 'Maximum file size of\nminor issue',
+                        'question': tr.get('Maximum file size of\nminor issue'),
                         'tag': 'fatal_size',
                         'default': _intToFilesizeExpression(plugin_config.get('fatal_size')),  # type: ignore
                     },

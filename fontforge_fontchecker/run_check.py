@@ -10,6 +10,7 @@ import webbrowser
 import fontforge
 
 from . import config
+from .translation import tr
 
 RESULT_JSON = 'lastresult.json'
 RESULT_HTML = 'lastresult.html'
@@ -296,10 +297,10 @@ def _outro(font: fontforge.font, filename: str, filepath: str):
     if filepath in glyphs:
         _outroColorAndComment(font, glyphs[filepath])
     ans = fontforge.ask(
-        _outroTitle(summary),
-        _outroMessage(summary) + '\n'
-        'Would you like to open details with the browser?',
-        ['_Yes', '_No'])  # type: ignore
+        tr.get(_outroTitle(summary)),
+        tr.get(_outroMessage(summary)) + '\n' +
+        tr.get('Would you like to open details with the browser?'),
+        [tr.get('_Yes'), tr.get('_No')])  # type: ignore
     if ans == 0:
         webbrowser.open('file://' + _htmlFile(), 1)
 
@@ -322,10 +323,10 @@ def _outro_multi(fonts: list[fontforge.font], filepaths: list[str]):
         if filepath in glyphs:
             _outroColorAndComment(font, glyphs[filepath])
     ans = fontforge.ask(
-        _outroTitle(summary),
-        _outroMessage(summary) + '\n'
-        'Would you like to open details with the browser?',
-        ['_Yes', '_No'])  # type: ignore
+        tr.get(_outroTitle(summary)),
+        tr.get(_outroMessage(summary)) + '\n' +
+        tr.get('Would you like to open details with the browser?'),
+        [tr.get('_Yes'), tr.get('_No')])  # type: ignore
     if ans == 0:
         webbrowser.open('file://' + _htmlFile(), 1)
 
@@ -361,11 +362,9 @@ def _ask_project_config(font: fontforge.font) -> Optional[str]:
     projectConf = _check_project_config(font)
     if projectConf:
         ans = fontforge.ask(
-            'Project-specific configuration file',
-            'Project-specific configuration file\n' +
-            projectConf + '\n'
-            'was found. Use it?',
-            ['_Yes', '_No'])  # type: ignore
+            tr.get('Project-specific configuration file'),
+            tr.get('Project-specific configuration file\n{}\nwas found. Use it?').format(projectConf),
+            [tr.get('_Yes'), tr.get('_No')])  # type: ignore
         if ans == 1:
             projectConf = None
     return projectConf
@@ -420,11 +419,13 @@ def run_check(u, font: fontforge.font):
     tmpfileRequired = _tmpfileRequired(font)
     if tmpfileRequired is None:
         ans = fontforge.ask(
-            'Font has been changed',
-            'The font\n' + font.path + '\n'
-            'has unsaved changes.\n'
-            'How would you like to check?',
-            ['Expor_t a temporary file', 'Check _existing font'],  # type: ignore
+            tr.get('Font has been changed'),
+            tr.get(
+                'The font\n{}\n'
+                'has unsaved changes.\n'
+                'How would you like to check?'
+            ).format(font.path),
+            [tr.get('Expor_t a temporary file'), tr.get('Check _existing font')],  # type: ignore
         )
         tmpfileRequired = (ans == 0)
     if tmpfileRequired:
@@ -461,11 +462,13 @@ def run_check_family(u, font: fontforge.font):
     tmpfileRequired = [_tmpfileRequired(f) for f in fonts]
     if [t for t in tmpfileRequired if t is None]:
         ans = fontforge.ask(
-            'Fonts have been changed',
-            "At least one font in family '" + _getFamilyName(font) + "'\n"
-            'has unsaved changes.\n'
-            'How would you like to check?',
-            ['Expor_t temporary files', 'Check _existing fonts'],  # type: ignore
+            tr.get('Fonts have been changed'),
+            tr.get(
+                "At least one font in family '{}'\n"
+                'has unsaved changes.\n'
+                'How would you like to check?'
+            ).format(_getFamilyName(font)),
+            [tr.get('Expor_t temporary files'), tr.get('Check _existing fonts')],  # type: ignore
         )
         tmpfileRequired = [ans == 0]
     if not any(tmpfileRequired):
