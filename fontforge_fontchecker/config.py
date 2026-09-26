@@ -3,7 +3,8 @@ import shutil
 from typing import Iterable, Optional, Union
 
 import fontforge
-from tomlkit.toml_file import TOMLFile, TOMLDocument
+from tomlkit.toml_file import TOMLFile
+from tomlkit.toml_document import TOMLDocument
 
 fontbakery_path = None
 fontspector_path = None
