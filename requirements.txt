@@ -1,1 +1,2 @@
 tomlkit
+fontforge_plugin_helper >= 0.3.0
