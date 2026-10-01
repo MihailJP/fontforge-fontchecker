@@ -13,6 +13,7 @@ translation_ja = {
     'Check font family': 'フォントファミリーをチェック',
 
     # config.py
+    'Configuration': '設定',
     'OpenType (standards compliance)': 'OpenType (規格への適合)',
     'Universal (community best practice)': 'ユニバーサル (コミュニティのベストプラクティス)',
     'ISO 15008 (in-car accessibility)': 'ISO 15008 (車載向けアクセシビリティ)',

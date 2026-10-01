@@ -316,7 +316,7 @@ def _dumpExplicitOverrides(prm: dict[str, list[dict[str, str]]]) -> str:
 
 def configInterface():
     ans = fontforge.askMulti(
-        'Configuration',
+        tr.get('Configuration'),
         [
             {
                 'category': tr.get('Frontend setting'),
